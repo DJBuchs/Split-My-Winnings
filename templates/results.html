@@ -1,0 +1,81 @@
+{% include "header.html" %}
+
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">Final Results</h2>
+            <table class="table table-bordered table-hover table-custom">
+                <thead class="table-primary">
+                    <tr>
+                        <th scope="col" class="col-2.5">Player</th>
+                        <th scope="col" class="col-2.5 text-center">Buy-in</th>
+                        <th scope="col" class="col-2.5 text-center">Cash-out</th>
+                        <th scope="col" class="col-2.5 text-center">Winnings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(players) %}
+                    <tr>
+                        <td class="bg-light">{{ form_data.get('player_' ~ i|string, '').capitalize() }}</td>
+                        <td class="text-end">{{ form_data.get('buyin_' ~ i|string, '') }}</td>
+                        <td class="text-end">{{ form_data.get('cashout_' ~ i|string, '') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+    </div>
+</div>
+
+
+
+<!-- IF STATEMENT FOR "REMAINING SETTLEMENTS" -->
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        {% if help_needed %}
+        <h2 class="mb-4">Updated Settlements</h2>
+        {% else %}
+        <h2 class="mb-4">Settlements</h2>
+        {% endif %}
+        <div class="row">
+            {% for settlement in settlements %}
+            <div class="col-md-4 mb-3">
+                <div class="card lightblue shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ settlement.ower }}</h5>
+                        <p class="card-text">
+                            <strong>Amount:</strong> ${{ settlement.amount }}<br>
+                            <strong>Owed to:</strong> {{ settlement.owed }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">Help Me Settle</h2>
+        <form
+        action="{{ url_for('free_results', players=players) }}"
+        method="post"
+        id="extraData"
+        name="extraData">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="payer" placeholder="Payer">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="payee" placeholder="Payee">
+                </div>
+                <div class="col-md-4">
+                    <input type="number" class="form-control" name="amount" placeholder="Amount">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Submit</button>
+        </form>
+    </div>
+</div>
+
+{% include "footer.html" %}

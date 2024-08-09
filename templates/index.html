@@ -1,0 +1,111 @@
+{% from "bootstrap5/form.html" import render_form %}
+{% include "header.html" %}
+
+<!-- Hero Section -->
+<div class="container px-4 py-5 my-5 col-md-10">
+    <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
+      <div class="col-10 col-sm-8 col-lg-6">
+        <img src="../static/images/homepage_hero.jpg" class="d-block mx-lg-auto img-fluid soft-edge" alt="Bootstrap Themes" width="700" height="500" loading="lazy">
+      </div>
+      <div class="col-lg-6">
+        <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Split your winnings today, in seconds!</h1>
+        <p class="lead">We know how difficult it can be to finish up your game and work out who owes what. <br/> Use our website; make life easy!</p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+          <a href="{{url_for('register')}}" class="btn btn-primary btn-lg px-4 me-md-2">Full Version</a>
+          <a href="{{url_for('free_player_count')}}" class="btn btn-outline-secondary btn-lg px-4">Lite Version</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- How It Works Section -->
+  <div class="container px-4 py-5 my-5 col-md-10" id="hanging-icons">
+    <h2 class="pb-2 border-bottom">How does it work?</h2>
+    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+      <div class="col d-flex align-items-start">
+        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-calculator-fill" viewBox="0 0 16 16">
+                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2 .5v2a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5m0 4v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5M4.5 9a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM4 12.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5M7.5 6a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM7 9.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5m.5 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM10 6.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5m.5 2.5a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-.5-.5z"/>
+              </svg>
+        </div>
+        <div>
+          <h3 class="fs-2 text-body-emphasis">Calculate Splits</h3>
+          <p>Quickly and accurately calculate poker splits among players with our easy-to-use tool.</p>
+          <a href="#" class="btn btn-primary">Example?</a>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+          <!-- SVG Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-clipboard-data-fill" viewBox="0 0 16 16">
+            <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5zM10 8a1 1 0 1 1 2 0v5a1 1 0 1 1-2 0zm-6 4a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0zm4-3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="fs-2 text-body-emphasis">Log Game Data</h3>
+          <p>Record and organize game details by group, allowing for seamless tracking of different poker sessions.</p>
+          <a href="#" class="btn btn-primary">Example?</a>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-graph-up-arrow" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
+              </svg>
+        </div>
+        <div>
+          <h3 class="fs-2 text-body-emphasis">View Game History</h3>
+          <p>Access detailed historical data on past games to analyze and review your poker sessions.</p>
+          <a href="#" class="btn btn-primary">Example?</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Purpose Section -->
+  <div class="container px-4 py-5 my-5 col-md-10">
+    <div class="p-5 text-center bg-body-tertiary border rounded-3 lightgrey">
+      <h1 class="text-body-emphasis">Our Purpose</h1>
+      <p class="lead">
+        Our mission is to be the go-to solution for your cash games at home. We make it easy to manage and split winnings in home games, 
+        so you can focus on the fun. Our tool lets you calculate splits, track game data, and see how you're doing, all with confidence. 
+        Plus, we're planning to add payment options in the future to make managing your poker finances even simpler.
+      </p>
+    </div>
+  </div>
+  
+  <!-- Form Section -->
+  <div class="container px-4 py-5 my-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="bg-light p-4 rounded shadow-sm">
+          <div class="text-center mb-4">
+            <h1>Get started now</h1>
+            <p>Sign up today for free and get full access to everything we have to offer!</p>
+          </div>
+          <form>
+            <div class="mb-3">
+              <label for="name" class="form-label">Name</label>
+              <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  
+  
+
+
+{% include "footer.html" %}

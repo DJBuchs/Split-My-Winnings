@@ -1,0 +1,56 @@
+{% from "bootstrap5/form.html" import render_form %}
+{% include "header.html" %}
+
+<!-- if player is logged in, change url_for to paid version which gives the option to save data afterwards as well-->
+
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">Player Buy-in & Cashouts</h2>
+        <form
+        action="{{url_for('free_details', players=players)}}"
+        method="post"
+        id="playerDetails"
+        name="winningAmounts">
+            <div class="row border-bottom pb-2 mb-4">
+                <div class="col-md-4">
+                    <strong>Player Name</strong>
+                </div>
+                <div class="col-md-4 text-center">
+                    <strong>Buy-in Amount</strong>
+                </div>
+                <div class="col-md-4 text-end">
+                    <strong>Cash-out Amount</strong>
+                </div>
+            </div>
+            {% for i in range(players) %}
+                <div class="mb-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4">
+                            <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" value="{{ form_data.get('player_' + i|string, '') }}" placeholder="Name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ form_data.get('buyin_' + i|string, '')}}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ form_data.get('cashout_' + i|string, '') }}" required>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="alert alert-danger" role="alert">
+                    {% for message in messages %}
+                        <p class="flash">{{message}}</p>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            <button class="btn btn-primary" type="submit">Calculate</button>
+        </form>
+    </div>
+</div>
+
+
+
+{% include "footer.html" %}
