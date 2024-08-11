@@ -6,15 +6,18 @@
           <svg class="bi" width="30" height="24"><use xlink:href="#bootstrap"></use></svg>
         </a>
         <span class="mb-3 mb-md-0 text-body-secondary">© 
-            <script type="text/javascript">document.write(new Date().getFullYear());</script> Split My Winnings, Inc
+            <script type="text/javascript">document.write(new Date().getFullYear());</script> Split My Winnings, Inc | All Rights Reserved
         </span>
       </div>
-  
-      <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
-        <li class="ms-3"><a class="text-body-secondary" href="#"><svg class="bi" width="24" height="24"><use xlink:href="#twitter"></use></svg></a></li>
-        <li class="ms-3"><a class="text-body-secondary" href="#"><svg class="bi" width="24" height="24"><use xlink:href="#instagram"></use></svg></a></li>
-        <li class="ms-3"><a class="text-body-secondary" href="#"><svg class="bi" width="24" height="24"><use xlink:href="#facebook"></use></svg></a></li>
-      </ul>
+      
+      <div class="row g-3">
+        <form action="{{url_for('contact_footer')}}" method="post" id="contactFooter" name="contactFooter" class="d-flex align-items-center">
+            <input type="text" name="message" placeholder="Have a feature suggestion?" required class="form-control me-2" style="flex: 2; min-width: 300px;;">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+
+      
     </footer>
   </div>
 

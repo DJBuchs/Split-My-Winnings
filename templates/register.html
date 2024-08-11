@@ -1,17 +1,17 @@
 {% include "header.html" %}
 
 <body style="background-color: #f8f9fa;">
-    <div class="custom-container my-5">
+    <div class="custom-container vertically-center">
         <div class="custom-bg p-4 rounded shadow-sm d-flex align-items-center">
             <!-- Left Column for Image -->
             <div class="custom-image-col d-none d-md-block">
-                <img src="../static/images/closeup-three-story-card-house-isolated-white-wall.jpg" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
+                <img src="../static/images/cards4.jpg" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
             </div>
 
             <!-- Right Column for Form -->
             <div class="custom-form-col">
                 <h2 class="h2-form custom-title mb-2">Early Registration</h2>
-                <p class="custom-lead mb-4">Register interest today and be the first to find out when we go live.</p>
+                <p class="custom-lead mb-5">Register interest today and be the first to find out when our full version goes live.</p>
                 <form
                     action="{{ url_for('register') }}"
                     method="post"
@@ -20,32 +20,37 @@
                     class="row g-3"
                 >
                     <div class="col-12">
-                        <label for="name" class="custom-form-label">Your Name</label>
-                        <input 
-                            type="text" 
-                            name="name" 
-                            id="name" 
-                            class="custom-input" 
-                            placeholder="Enter your name"
-                            required
-                        >
+                        <div class="form-floating">
+                            <input 
+                                type="text" 
+                                name="name" 
+                                id="name" 
+                                class="form-control" 
+                                placeholder="Name"
+                                required
+                            >
+                            <label for="name">Name</label>
+                        </div>
                     </div>
                     <div class="col-12">
-                        <label for="email" class="custom-form-label">Your Email</label>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            id="email" 
-                            class="custom-input" 
-                            placeholder="Enter your email"
-                            required
-                        >
+                        <div class="form-floating">
+                            <input 
+                                type="email" 
+                                name="email" 
+                                id="email" 
+                                class="form-control" 
+                                placeholder="Email"
+                                required
+                            >
+                            <label for="email">Email</label>
+                        </div>
                     </div>
                     <div class="col-12">
                         <button class="custom-btn" type="submit">Register</button>
                     </div>
                 </form>
             </div>
+
         </div>
     </div>
 </body>

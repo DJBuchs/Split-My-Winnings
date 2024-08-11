@@ -1,6 +1,9 @@
 {% from "bootstrap5/form.html" import render_form %}
 {% include "header.html" %}
 
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+
 <!-- Hero Section -->
 <div class="container px-4 py-5 my-5 col-md-10">
     <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
@@ -8,8 +11,8 @@
         <img src="../static/images/homepage_hero.jpg" class="d-block mx-lg-auto img-fluid soft-edge" alt="Bootstrap Themes" width="700" height="500" loading="lazy">
       </div>
       <div class="col-lg-6">
-        <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Split your winnings today, in seconds!</h1>
-        <p class="lead">We know how difficult it can be to finish up your game and work out who owes what. <br/> Use our website; make life easy!</p>
+        <h1 class="display-5 lh-1 mb-3" style="font-family: 'Montserrat', sans-serif; font-size: 3rem; font-weight: 700;">Split your winnings today, in seconds!</h1>
+        <p class="lead" style="font-family: 'Open Sans', sans-serif; font-size: 1.3rem;">We know how difficult it can be to finish up your game and work out who owes what. <br/> Use our website, make life easy!</p>
         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
           <a href="{{url_for('register')}}" class="btn btn-primary btn-lg px-4 me-md-2">Full Version</a>
           <a href="{{url_for('free_player_count')}}" class="btn btn-outline-secondary btn-lg px-4">Lite Version</a>
@@ -19,8 +22,8 @@
   </div>
   
   <!-- How It Works Section -->
-  <div class="container px-4 py-5 my-5 col-md-10" id="hanging-icons">
-    <h2 class="pb-2 border-bottom">How does it work?</h2>
+  <div class="container px-4 py-5 mt-5 col-md-10" id="hanging-icons">
+    <h2 class="pb-2 border-bottom" style="font-family: 'Montserrat', sans-serif; font-size: 2.5rem; font-weight: 500;">Explore our features</h2> 
     <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
       <div class="col d-flex align-items-start">
         <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
@@ -30,8 +33,8 @@
         </div>
         <div>
           <h3 class="fs-2 text-body-emphasis">Calculate Splits</h3>
-          <p>Quickly and accurately calculate poker splits among players with our easy-to-use tool.</p>
-          <a href="#" class="btn btn-primary">Example?</a>
+          <p style="font-family: 'Open Sans', sans-serif; font-size: 1rem;">Quickly and accurately calculate poker splits among players with our easy-to-use tool.</p>
+
         </div>
       </div>
       <div class="col d-flex align-items-start">
@@ -44,8 +47,8 @@
         </div>
         <div>
           <h3 class="fs-2 text-body-emphasis">Log Game Data</h3>
-          <p>Record and organize game details by group, allowing for seamless tracking of different poker sessions.</p>
-          <a href="#" class="btn btn-primary">Example?</a>
+          <p style="font-family: 'Open Sans', sans-serif; font-size: 1rem;">Record and organize game details by group, allowing for seamless tracking of different poker sessions.</p>
+
         </div>
       </div>
       <div class="col d-flex align-items-start">
@@ -56,53 +59,90 @@
         </div>
         <div>
           <h3 class="fs-2 text-body-emphasis">View Game History</h3>
-          <p>Access detailed historical data on past games to analyze and review your poker sessions.</p>
-          <a href="#" class="btn btn-primary">Example?</a>
+          <p style="font-family: 'Open Sans', sans-serif; font-size: 1rem;">Access detailed historical data on past games to analyze and review your poker sessions.</p>
+
         </div>
       </div>
     </div>
   </div>
+
+  <div class="container px-4 col-md-10">
+    <h2 class="border-bottom"></h2>
+    </div>
   
   <!-- Purpose Section -->
   <div class="container px-4 py-5 my-5 col-md-10">
     <div class="p-5 text-center bg-body-tertiary border rounded-3 lightgrey">
-      <h1 class="text-body-emphasis">Our Purpose</h1>
-      <p class="lead">
+      <h1 class="text-body-emphasis mb-3 ">Our Purpose</h1>
+      <p class="lead" style="font-family: 'Open Sans', sans-serif; font-size: 1.1rem;">
         Our mission is to be the go-to solution for your cash games at home. We make it easy to manage and split winnings in home games, 
         so you can focus on the fun. Our tool lets you calculate splits, track game data, and see how you're doing, all with confidence. 
         Plus, we're planning to add payment options in the future to make managing your poker finances even simpler.
       </p>
     </div>
   </div>
+
+  <div class="container px-4 col-md-10">
+  <h2 class="pb-2 border-bottom"></h2>
+  </div>
+
+
+
+  <div class="container col-md-7 my-5">
+    <div class="p-4 d-flex align-items-center g-5">
+        <!-- Left Column for Image -->
+        <div class="custom-image-col d-none d-md-block">
+          <img src="../static/images/cards4.jpg" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
+      </div>
+
+        <!-- Right Column for Form -->
+        <div class="custom-form-col">
+          <h2 class="h2-form custom-title mb-2">Early Registration</h2>
+          <p class="custom-lead mb-5">Register interest today and be the first to find out when our full version goes live.</p>
+          <form
+              action="{{ url_for('register') }}"
+              method="post"
+              id="earlyReg"
+              name="earlyReg"
+              class="row g-3"
+          >
+              <div class="col-12">
+                  <div class="form-floating">
+                      <input 
+                          type="text" 
+                          name="name" 
+                          id="name" 
+                          class="form-control" 
+                          placeholder="Name"
+                          required
+                      >
+                      <label for="name">Name</label>
+                  </div>
+              </div>
+              <div class="col-12">
+                  <div class="form-floating">
+                      <input 
+                          type="email" 
+                          name="email" 
+                          id="email" 
+                          class="form-control" 
+                          placeholder="Email"
+                          required
+                      >
+                      <label for="email">Email</label>
+                  </div>
+              </div>
+              <div class="col-12">
+                  <button class="custom-btn" type="submit">Register</button>
+              </div>
+          </form>
+      </div>
+
+    </div>
+</div>
   
   <!-- Form Section -->
-  <div class="container px-4 py-5 my-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6">
-        <div class="bg-light p-4 rounded shadow-sm">
-          <div class="text-center mb-4">
-            <h1>Get started now</h1>
-            <p>Sign up today for free and get full access to everything we have to offer!</p>
-          </div>
-          <form>
-            <div class="mb-3">
-              <label for="name" class="form-label">Name</label>
-              <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
-            </div>
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
-            </div>
-            <div class="mb-3">
-              <label for="password" class="form-label">Password</label>
-              <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Submit</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+
   
   
   

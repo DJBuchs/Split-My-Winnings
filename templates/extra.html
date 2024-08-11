@@ -1,0 +1,44 @@
+<!-- Winnings Table -->
+
+<div class="col-md-4">
+    <table class="table table-bordered table-hover table-win">
+        <thead class="table-success">
+            <tr>
+                <th scope="col" class="text-center">Winnings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for winning in winnings %}
+                {% if winning > 0 %}
+                <tr>
+                    <td class="text-center fw-bold" style="color: #009C4C;">{{ winning }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="text-center fw-bold" style="color: #C8102E;">({{ winning|abs }})</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+<div class="col-md-4">
+    <div class="card custom-card shadow-sm" style="height: {{ (players + 1) * 41 }}px;">
+        <div class="card-body">
+            <h5 class="card-title text-center fw-bold mb-3">Winnings</h5>
+            <p class="card-text text-center">
+                {% for i in range(players) %}
+                <div class="m-2 text-center">
+                    {% if winnings[i] > 0 %}
+                        <strong>{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Won {{ "{:.0f}".format(winnings[i]|abs) }}<br>
+                    {% else %}
+                        <strong>{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Lost {{ "{:.0f}".format(winnings[i]|abs) }}<br>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </p>
+        </div>
+    </div>
+</div>

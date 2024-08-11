@@ -9,3 +9,4 @@ Flask==2.3.2
 flask_sqlalchemy==3.1.1
 SQLAlchemy==2.0.25
 python-dotenv==1.0.1
+bleach==6.1.0

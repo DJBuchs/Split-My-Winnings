@@ -25,13 +25,13 @@
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
               <li><a href="{{url_for('home')}}" class="nav-link px-2 text-secondary">Home</a></li>
               <li><a href="{{url_for('free_player_count')}}" class="nav-link px-2 text-white">Split-Free</a></li>
-              <li><a href="#" class="nav-link px-2 text-white">Contact</a></li>
+              <li><a href="{{url_for('contact_form')}}" class="nav-link px-2 text-white">Contact</a></li>
               <li><a href="#" class="nav-link px-2 text-white">Support Me</a></li>
             </ul>
 
             <div class="text-end">
-              <button type="button" class="btn btn-outline-light me-2">Login</button>
-              <button type="button" class="btn btn-warning">Sign-up</button>
+              <a href="{{url_for('register')}}" class="btn btn-outline-light me-2" role="button">Login</a>
+              <a href="{{url_for('register')}}" class="btn btn-warning" role="button">Sign-up</a>
             </div>
           </div>
         </div>
