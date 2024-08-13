@@ -11,24 +11,17 @@
 
             <!-- Right Column for Form -->
             <div class="custom-form-col">
-                <h2 class="h2-form custom-title mb-2">Registration Form</h2>
-                <p class="custom-lead mb-5">Register interest today and be the first to find out when our full version goes live.</p>
+                <h2 class="h2-form custom-title mb-2">Login Form</h2>
                 <form
-                    action="{{ url_for('register') }}"
+                    action="{{ url_for('login') }}"
                     method="post"
-                    id="earlyReg"
-                    name="earlyReg"
+                    id="login"
+                    name="login"
                     class="row g-3"
                 >
-                {{ form.hidden_tag() }}
+                    {{ form.hidden_tag() }}
                     <div class="col-12">
-                        <div class="form-floating">
-                            {{ form.name(class="form-control", id="name") }}
-                            {{ form.name.label(for="name") }}
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="form-floating">
+                        <div class="form-floating"> 
                             {{ form.email(class="form-control", id="email") }}
                             {{ form.email.label(for="email") }}
                         </div>
@@ -39,27 +32,15 @@
                             {{ form.password.label(for="password") }}
                         </div>
                     </div>
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            <div class="alert alert-danger col-12" role="alert">
-                            {% for message in messages %}
-                                {{message}}
-                            {% endfor %}
-                            </div>
-
-                        {% endif %}
-                    {% endwith %}
                     <div class="col-12">
-                        <button class="custom-btn" type="submit">Register</button>
+                        {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
             </div>
+            
 
         </div>
     </div>
 </body>
-
-
-
 
 {% include "footer.html" %}

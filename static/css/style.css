@@ -165,4 +165,12 @@
     display: flex;
     align-items: center;
   }
-  
+
+
+.placeholder-style {
+    color: #6c757d; /* Initial color for the select element */
+}
+
+.placeholder-style:valid {
+    color: #000;
+}

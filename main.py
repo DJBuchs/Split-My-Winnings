@@ -1,10 +1,10 @@
 from datetime import date
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, session
 from flask_bootstrap import Bootstrap5
-from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
+from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text, ForeignKey
+from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from typing import List
@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 import smtplib
 import bleach
 import secrets
+from forms import RegisterForm, LoginForm
+from datetime import datetime
 
 load_dotenv()
 
@@ -21,44 +23,124 @@ app.config['SECRET_KEY'] = os.getenv("FLASK_KEY")
 Bootstrap5(app)
 
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
 app.config['SEND_EMAIL'] = os.getenv("SEND_EMAIL")
 app.config['EMAIL_PASS'] = os.getenv("EMAIL_PASS")
 app.config['EMAIL_RECEIVE'] = os.getenv("SEND_EMAIL")
 app.config['SESSION_COOKIE_SECURE'] = True
 
 
+class Base(DeclarativeBase):
+    pass
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/danibuchsbaum/Split_My_Winnings/instance/poker_database.db'
+db = SQLAlchemy(model_class=Base)
+db.init_app(app)
+
+
+class User(db.Model, UserMixin):
+    __tablename__ = "blog_users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True)
+    password: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(1000))
+
+    def get(user_id):
+        return User.query.get(user_id)
+    
+
+class GameData(db.Model):
+    __tablename__ = "game_data"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    game_data: Mapped[dict] = mapped_column(JSON)
+    date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    # game field for which game it is?
+
+    def __init__(self, game_data):
+        self.game_data = game_data
+    
+
+with app.app_context():
+    db.create_all()
+
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+
 @app.route('/', methods=['POST', 'GET'])
 def home():
-    return render_template("index.html")
+    form = RegisterForm()
+    return render_template("index.html", form=form)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
+
+# LOGIN PAGE
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = db.session.execute(db.select(User).where(User.email == form.email.data)).scalar()
+        if user and check_password_hash(user.password, form.password.data):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        elif user is None:
+            flash("That email doesn't exist.")
+            return redirect(url_for('login'))
+        elif check_password_hash(user.password, form.password.data) is False:
+            flash("Incorrect password, try again.")
+            return redirect(url_for('login'))
+    return render_template('login.html', form=form)
 
 
 # THANK YOU PAGE
-@app.route('/thank-you', methods=['POST', 'GET'])
+@app.route('/thank-you')
 def thank_you():
     return render_template("thank_you.html")
+
+
+# WELCOME PAGE
+@app.route('/registration_success')
+def register_success():
+    return render_template("register_success.html")
 
 
 # REGISTER INTEREST
 @app.route('/register', methods=['POST', 'GET'])
 def register():
-    if request.method == 'POST':
-        form_data = request.form
-        email_entered = form_data['email']
-        name_entered = form_data['name']
-        try:
-            with smtplib.SMTP("smtp.gmail.com") as connection:
-                connection.starttls()
-                connection.login(user=app.config['SEND_EMAIL'], password=app.config['EMAIL_PASS'])
-                connection.sendmail(
-                    from_addr=app.config['SEND_EMAIL'], 
-                    to_addrs=app.config['EMAIL_RECEIVE'], 
-                    msg=f"Subject: New Poker Registration\n\n{name_entered} is interested in the full version of the website!\nEmail: {email_entered}"
-                    )
-        except Exception as e:
-            return f"An error occurred: {e}", 500
-        
-        return redirect(url_for('thank_you'))
-    return render_template("register.html")
+    form = RegisterForm()
+    if form.validate_on_submit():
+        email_exists = db.session.execute(db.select(User).where(User.email == form.email.data)).scalars().first()
+        if email_exists:
+            flash('That email address is already in use.')
+            return redirect(url_for('register'))
+        else:
+            hashed_pass = generate_password_hash(form.password.data, method='pbkdf2:sha256', salt_length=8)
+            new_user = User(
+                email=form.email.data,
+                password=hashed_pass,
+                name=form.name.data,
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            login_user(new_user)
+            return redirect(url_for('register_success'))
+    return render_template("register.html", form=form)
+
+
+# DASHBOARD
+@app.route('/dashboard', methods=['POST', 'GET'])
+@login_required
+def dashboard():
+    return render_template("dashboard.html")
 
 
 # CONTACT US
@@ -104,6 +186,111 @@ def contact_footer():
             return f"An error occurred: {e}", 500
             
         return redirect(request.referrer)
+
+
+# PAID VERSION - NUMBER OF PLAYERS + GAME
+@app.route('/player-count', methods=['POST', 'GET'])
+def player_count():
+    if request.method == 'POST':
+        data = request.form
+        number_of_players = data["number"]
+        if number_of_players:
+            session['num_players'] = int(number_of_players)
+            return redirect(url_for('paid_details', players=number_of_players))
+    return render_template("paid_count.html")
+
+
+# PAID VERSION - INPUTS FOR CASH GAME
+@app.route('/player-details', methods=['POST', 'GET'])
+def paid_details():
+    if request.method == 'POST':
+        data = request.form
+        num_players = session.get('num_players')
+        buy_ins = 0
+        cash_outs = 0
+        for i in range(num_players):
+            buy_ins += int(data[f'buyin_{i}'])
+            cash_outs += int(data[f'cashout_{i}'])        
+        if buy_ins == cash_outs:
+            session['form_data'] = data.to_dict()
+            session.pop('extra_data', None)
+            return redirect(url_for('paid_results', players=num_players))
+        else:
+            flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
+            session['form_data'] = data.to_dict()
+            return redirect(url_for('paid_details', players=num_players))
+    form_data = session.get('form_data', {})
+    number_of_players = session.get('num_players')
+    return render_template("paid_details.html", players=number_of_players, form_data=form_data)
+
+
+# PAID VERSION - RESULTS
+@app.route('/results', methods=['POST', 'GET'])
+def paid_results():
+
+    if request.method == 'POST':        
+        # Get new form data
+        new_data = request.form.to_dict()
+        payer = new_data['payer'].capitalize()
+        payee = new_data['payee'].capitalize()
+
+        form_data = session.get('form_data', {})
+        num_players = session.get('num_players')
+
+        player_names = [form_data[f'player_{i}'].capitalize() for i in range(num_players)]
+        
+        if payer not in player_names or payee not in player_names:
+            flash("One or more of the names entered were not involved in the game.")
+            return redirect(url_for("paid_results"))
+        else: 
+            # Update session with new data
+            previous_data = session.get('extra_data', [])
+            previous_data.append(new_data)
+            session['extra_data'] = previous_data
+            
+            return redirect(url_for("paid_results"))
+    
+    num_players = session.get('num_players')
+    form_data = session.get('form_data', {})
+
+    players = []
+    for i in range(num_players):
+        player = {
+            'name': form_data[f'player_{i}'].capitalize(),
+            'buyin': float(form_data[f'buyin_{i}']),
+            'cashout': float(form_data[f'cashout_{i}'])
+        }
+        players.append(player)
+
+    # Caluculation for winnings
+    session_winnings = [player['cashout'] - player['buyin'] for player in players]
+    
+    extra_data = session.get('extra_data', [])
+    help_needed = False
+
+    if extra_data:
+        help_needed = True
+        players = update_cashout(players, extra_data)
+    
+    settlements = calculate_settlements(players)
+
+    return render_template("paid_results.html", form_data=form_data, 
+                           players=num_players, settlements=settlements,
+                           help_needed=help_needed, winnings=session_winnings)
+
+
+# SAVE GAME DATA
+@app.route('/save-data', methods=['POST', 'GET'])
+def save_data():
+    form_data = session.get('form_data', {})
+
+    new_game = GameData(game_data=form_data)
+    db.session.add(new_game)
+    db.session.commit()
+
+    # give feedback and write something here to disable the button being pressed multiple times until the next time this page is visited
+
+    return redirect(url_for('paid_results'))
 
 
 
@@ -152,7 +339,7 @@ def clear_table():
 
 
 # FREE VERSION - RESULTS
-@app.route('/results', methods=['POST', 'GET'])
+@app.route('/free-results', methods=['POST', 'GET'])
 def free_results():
 
     if request.method == 'POST':        

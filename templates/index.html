@@ -95,9 +95,9 @@
           <img src="../static/images/cards4.jpg" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
       </div>
 
-        <!-- Right Column for Form -->
-        <div class="custom-form-col">
-          <h2 class="h2-form custom-title mb-2">Early Registration</h2>
+      <!-- Right Column for Form -->
+      <div class="custom-form-col">
+          <h2 class="h2-form custom-title mb-2">Registration Form</h2>
           <p class="custom-lead mb-5">Register interest today and be the first to find out when our full version goes live.</p>
           <form
               action="{{ url_for('register') }}"
@@ -105,33 +105,37 @@
               id="earlyReg"
               name="earlyReg"
               class="row g-3"
+              autocomplete="off"
           >
+          {{ form.hidden_tag() }}
               <div class="col-12">
                   <div class="form-floating">
-                      <input 
-                          type="text" 
-                          name="name" 
-                          id="name" 
-                          class="form-control" 
-                          placeholder="Name"
-                          required
-                      >
-                      <label for="name">Name</label>
+                      {{ form.name(class="form-control", id="name") }}
+                      {{ form.name.label(for="name") }}
                   </div>
               </div>
               <div class="col-12">
                   <div class="form-floating">
-                      <input 
-                          type="email" 
-                          name="email" 
-                          id="email" 
-                          class="form-control" 
-                          placeholder="Email"
-                          required
-                      >
-                      <label for="email">Email</label>
+                      {{ form.email(class="form-control", id="email") }}
+                      {{ form.email.label(for="email") }}
                   </div>
               </div>
+              <div class="col-12">
+                  <div class="form-floating">
+                      {{ form.password(class="form-control", id="password") }}
+                      {{ form.password.label(for="password") }}
+                  </div>
+              </div>
+              {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                      <div class="alert alert-danger col-12" role="alert">
+                      {% for message in messages %}
+                          {{message}}
+                      {% endfor %}
+                      </div>
+
+                  {% endif %}
+              {% endwith %}
               <div class="col-12">
                   <button class="custom-btn" type="submit">Register</button>
               </div>
