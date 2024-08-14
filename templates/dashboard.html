@@ -1,5 +1,88 @@
 {% include "header.html" %}
 
+<!-- SETTLEMENTS CONTAINER -->
+<div class="container col-10 my-5">
+        <div class="p-4">
 
+            <h2 class="mb-3">My Games</h2>
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <div class="card lightblue shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Make this a placeholder healder</h5>
+                        <p class="card-text">
+                            <strong>Number of games played, total buyins, your win history etc.</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<div class="container col-10 my-5">
+    <div class="bg-light px-4 py-3 rounded shadow-sm">
+        <h2 class="mb-3">Recent History</h2>
+        {% if game_data %}
+        {% for i in range(game_data | length) %}
+        <div class="col-md-12 mb-3">
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header" style="background-color: #6c757d; color: white;">
+                    <h5 class="mb-0" style="font-size: 1.2em;">{{ game_name[i] }}</h5>
+                </div>
+                
+                <div class="card-body py-2">
+                    <div class="row align-items-center text-center">
+                        <div class="col-md-4 text-start">
+                            <div class="fw-bold">{{ date[i] }}</div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="fw-bold">{{ game_data[i] | length }}</div>
+                            <small class="text-muted">Players</small>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="fw-bold text-primary">${{ "{:.0f}".format(buyins[i] | float) }}</div>
+                            <small class="text-muted">Total Buyins</small>
+                        </div>
+                        <div class="col-md-2">
+                            {% if owner_data[i] or owner_data[i] == 0 %}
+                                {% if owner_data[i] > 0 %}
+                                    <div class="fw-bold text-success">${{ "{:.0f}".format(owner_data[i] | float) }}</div>
+                                    <small class="text-muted">You Won</small>
+                                {% elif owner_data[i] < 0 %}
+                                    <div class="fw-bold text-danger">${{ "{:.0f}".format(owner_data[i] | float  | abs  ) }}</div>
+                                    <small class="text-muted">You Lost</small>
+                                {% elif owner_data[i] == 0 %}
+                                    <div class="fw-bold text-dark">-</div>
+                                    <small class="text-muted">Broke Even</small>
+                                {% endif %}
+                            {% else %}
+                                <div class="fw-bold text-secondary">-</div>
+                                <small class="text-muted">Not Involved</small>
+                            {% endif %}
+
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="alert alert-info text-center d-flex align-items-center justify-content-center" role="alert" style="height: 80px;">
+            <h4 class="mb-0">No Game Data Available</h4>
+        </div>
+        {% endif %}
+        
+
+    </div>
+</div>
 
 {% include "footer.html" %}

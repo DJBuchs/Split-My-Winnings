@@ -56,14 +56,26 @@ class GameData(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     game_data: Mapped[dict] = mapped_column(JSON)
     date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    # game field for which game it is?
+    # relationship mapping for cash game
+    cash_game_id: Mapped[int] = mapped_column(ForeignKey("poker_game.id"))
+    cash_game: Mapped["CashGame"] = relationship("CashGame", back_populates="session_data")
 
-    def __init__(self, game_data):
+    def __init__(self, game_data, cash_game):
         self.game_data = game_data
-    
+        self.cash_game = cash_game
 
-with app.app_context():
-    db.create_all()
+
+class CashGame(db.Model):
+    __tablename__ = "poker_game"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    cash_name: Mapped[str] = mapped_column(String(100))
+    player_list: Mapped[list] = mapped_column(JSON, default=[])
+    # relationship mapping for game sessions
+    session_data: Mapped[List["GameData"]] = relationship("GameData", back_populates="cash_game")
+
+    
+# with app.app_context():
+#     db.create_all()
 
 
 @app.route('/logout')
@@ -140,7 +152,16 @@ def register():
 @app.route('/dashboard', methods=['POST', 'GET'])
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    # 3 most recent games
+    games = get_recent_games()
+    game_data = [game.game_data for game in games]
+    formatted_dates = [game.date.strftime("%A %d{} %B").format(get_ordinal_suffix(game.date.day)) for game in games]
+    buyins = [sum(data['buyin'] for data in game) for game in game_data]
+    owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
+    game_names = [game.cash_game for game in games]
+
+    return render_template("dashboard.html", game_data=game_data, buyins=buyins, date=formatted_dates,
+                           owner_data=owner_data, game_name = game_names)
 
 
 # CONTACT US
@@ -191,13 +212,19 @@ def contact_footer():
 # PAID VERSION - NUMBER OF PLAYERS + GAME
 @app.route('/player-count', methods=['POST', 'GET'])
 def player_count():
+    result = db.session.execute(db.select(CashGame).order_by(CashGame.id))
+    all_games = result.scalars().all()
+    cash_list = [game.cash_name for game in all_games]
+
     if request.method == 'POST':
         data = request.form
         number_of_players = data["number"]
         if number_of_players:
             session['num_players'] = int(number_of_players)
+            session['session_game'] = data['selected_game']
             return redirect(url_for('paid_details', players=number_of_players))
-    return render_template("paid_count.html")
+        
+    return render_template("paid_count.html", cash_game=cash_list)
 
 
 # PAID VERSION - INPUTS FOR CASH GAME
@@ -283,8 +310,20 @@ def paid_results():
 @app.route('/save-data', methods=['POST', 'GET'])
 def save_data():
     form_data = session.get('form_data', {})
+    num_players = session.get('num_players')
+    game_data = []
+    for i in range(num_players):
+        player = {
+            'name': form_data[f'player_{i}'].capitalize(),
+            'buyin': float(form_data[f'buyin_{i}']),
+            'cashout': float(form_data[f'cashout_{i}'])
+        }
+        game_data.append(player)
+    game_name = session.get('session_game')
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name).first()
 
-    new_game = GameData(game_data=form_data)
+
+    new_game = GameData(game_data=game_data, cash_game=cash_game)
     db.session.add(new_game)
     db.session.commit()
 
@@ -436,6 +475,17 @@ def update_cashout(players, extra_data):
                 player['cashout'] -= amount
 
     return players
+
+
+def get_ordinal_suffix(day):
+    if 11 <= day <= 13:
+        return 'th'
+    else:
+        return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    
+
+def get_recent_games(limit=3):
+    return db.session.query(GameData).order_by(GameData.date.desc()).limit(limit).all()
 
 
 if __name__ == "__main__":
