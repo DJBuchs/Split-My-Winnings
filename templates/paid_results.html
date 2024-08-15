@@ -76,7 +76,7 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ settlement.ower }}</h5>
                         <p class="card-text">
-                            <strong>Amount:</strong> ₪{{ "{:.0f}".format(settlement.amount | float) }}<br>
+                            <strong>Amount:</strong> {{ cash_game.currency }}{{ "{:.0f}".format(settlement.amount | float) }}<br>
                             <strong>Owed to:</strong> {{ settlement.owed }}
                         </p>
                     </div>

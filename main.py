@@ -4,7 +4,7 @@ from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime
+from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime, func
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from typing import List
@@ -70,12 +70,13 @@ class CashGame(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     cash_name: Mapped[str] = mapped_column(String(100))
     player_list: Mapped[list] = mapped_column(JSON, default=[])
+    currency: Mapped[str] = mapped_column(String(10))
     # relationship mapping for game sessions
     session_data: Mapped[List["GameData"]] = relationship("GameData", back_populates="cash_game")
 
     
-# with app.app_context():
-#     db.create_all()
+with app.app_context():
+    db.create_all()
 
 
 @app.route('/logout')
@@ -152,17 +153,68 @@ def register():
 @app.route('/dashboard', methods=['POST', 'GET'])
 @login_required
 def dashboard():
+    # list of cash games
+    result = (
+    db.session.query(CashGame)
+    .outerjoin(GameData)  # Adjust to match your relationship
+    .group_by(CashGame.id)
+    .order_by(func.count(GameData.id).desc(), CashGame.id.desc())
+    )
+    all_games = result.all()
+    games_list = []
+    # pull the required data from the poker games in the db
+    for game in all_games:
+        session_data = game.session_data
+        num_sessions = len(session_data)
+        total_buyins = sum(
+        player['buyin']
+        for data in session_data  # Iterate over each GameData instance
+        for player in data.game_data  # Iterate over each player in game_data
+        )
+        avg_buyins = total_buyins / num_sessions if num_sessions > 0 else 0
+        amount_won = sum(
+        (player['cashout'] - player['buyin'])
+        for data in session_data
+        for player in data.game_data
+        if player['name'] == current_user.name
+        )
+        games_list.append({
+        'name': game.cash_name,
+        'sessions': num_sessions,
+        'avg_buyin': avg_buyins,
+        'amount_won': amount_won
+        })
+
     # 3 most recent games
     games = get_recent_games()
     game_data = [game.game_data for game in games]
     formatted_dates = [game.date.strftime("%A %d{} %B").format(get_ordinal_suffix(game.date.day)) for game in games]
     buyins = [sum(data['buyin'] for data in game) for game in game_data]
     owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
-    game_names = [game.cash_game for game in games]
+    game_names = [game.cash_game.cash_name for game in games]
 
     return render_template("dashboard.html", game_data=game_data, buyins=buyins, date=formatted_dates,
-                           owner_data=owner_data, game_name = game_names)
+                           owner_data=owner_data, game_name = game_names,
+                           games=games_list)
 
+
+# ADD A POKER GAME
+@app.route('/add-game', methods=['POST', 'GET'])
+def add_game():
+    if request.method == 'POST':
+        data = request.form
+        game_name = data['name']
+        currency = data['currency']
+        new_poker_game = CashGame(
+            cash_name=game_name,
+            player_list=[],
+            currency=currency
+        )
+        db.session.add(new_poker_game)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_game.html')
 
 # CONTACT US
 @app.route('/contact-us', methods=['POST', 'GET'])
@@ -301,9 +353,15 @@ def paid_results():
     
     settlements = calculate_settlements(players)
 
+    # pass currency from game chosen
+
+    game_name = session.get('session_game')
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name).first()
+
     return render_template("paid_results.html", form_data=form_data, 
                            players=num_players, settlements=settlements,
-                           help_needed=help_needed, winnings=session_winnings)
+                           help_needed=help_needed, winnings=session_winnings,
+                           cash_game=cash_game)
 
 
 # SAVE GAME DATA

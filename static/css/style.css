@@ -174,3 +174,9 @@
 .placeholder-style:valid {
     color: #000;
 }
+
+
+.bg-lightblue {
+    background-color: #8bcdeb; /* Light blue background */
+    border-color: #8bcdeb
+}

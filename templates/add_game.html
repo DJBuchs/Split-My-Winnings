@@ -1,0 +1,31 @@
+{% include "header.html" %}
+
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">New Poker Game</h2>
+        <form
+        action="{{url_for('add_game')}}"
+        method="post"
+        id="newGame"
+        name="newGame">
+            <div class="mb-3">
+                <input type="text" id="name" name="name" class="form-control" placeholder="Name" required>
+            </div>
+            <div class="mb-3">
+                <select class="form-select placeholder-style" name="currency" aria-label="Default select" required>
+                    <option selected disabled value="">Currency</option>
+                    <option>$</option>
+                    <option>£</option>
+                    <option>€</option>
+                    <option>₪</option>
+                    <option>¥</option>
+                  </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+    </div>
+</div>
+
+
+
+{% include "footer.html" %}
