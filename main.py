@@ -33,6 +33,11 @@ app.config['EMAIL_RECEIVE'] = os.getenv("SEND_EMAIL")
 app.config['SESSION_COOKIE_SECURE'] = True
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return db.get_or_404(User, user_id)
+
+
 class Base(DeclarativeBase):
     pass
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/danibuchsbaum/Split_My_Winnings/instance/poker_database.db'
@@ -46,9 +51,6 @@ class User(db.Model, UserMixin):
     email: Mapped[str] = mapped_column(String(100), unique=True)
     password: Mapped[str] = mapped_column(String(100))
     name: Mapped[str] = mapped_column(String(1000))
-
-    def get(user_id):
-        return User.query.get(user_id)
     
 
 class GameData(db.Model):
@@ -75,8 +77,8 @@ class CashGame(db.Model):
     session_data: Mapped[List["GameData"]] = relationship("GameData", back_populates="cash_game")
 
     
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 
 @app.route('/logout')
@@ -89,11 +91,6 @@ def logout():
 def home():
     form = RegisterForm()
     return render_template("index.html", form=form)
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.get(user_id)
 
 
 # LOGIN PAGE
@@ -258,7 +255,7 @@ def contact_footer():
         except Exception as e:
             return f"An error occurred: {e}", 500
             
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for('home'))
 
 
 # PAID VERSION - NUMBER OF PLAYERS + GAME
@@ -271,7 +268,7 @@ def player_count():
     if request.method == 'POST':
         data = request.form
         number_of_players = data["number"]
-        if number_of_players:
+        if int(number_of_players) > 0:
             session['num_players'] = int(number_of_players)
             session['session_game'] = data['selected_game']
             return redirect(url_for('paid_details', players=number_of_players))
@@ -282,25 +279,59 @@ def player_count():
 # PAID VERSION - INPUTS FOR CASH GAME
 @app.route('/player-details', methods=['POST', 'GET'])
 def paid_details():
+    # pull the poker game chosen
+    game_name = session.get('session_game')
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name).first()
     if request.method == 'POST':
+
         data = request.form
         num_players = session.get('num_players')
         buy_ins = 0
         cash_outs = 0
-        for i in range(num_players):
-            buy_ins += int(data[f'buyin_{i}'])
-            cash_outs += int(data[f'cashout_{i}'])        
+
         if buy_ins == cash_outs:
+
+            player_names = set()
+            for i in range(num_players):
+                player_name = data[f"player_{i}"]
+            
+                if player_name in player_names:
+                    flash('Cannot have two players with the same name.')
+                    session['form_data'] = data.to_dict()
+                    return redirect(url_for('paid_details', players=num_players))
+                
+                player_names.add(player_name)
+                    
+                    
+
+            # add player names to db
+            player_list = cash_game.player_list.copy()
+            changed = False
+            for i in range(num_players):
+                player_name = data[f"player_{i}"].capitalize()
+                if player_name not in player_list:
+                    player_list.append(player_name)
+                    changed = True
+
+            if changed:
+                cash_game.player_list = player_list
+                print(player_list)
+                db.session.commit()
+
             session['form_data'] = data.to_dict()
             session.pop('extra_data', None)
+
             return redirect(url_for('paid_results', players=num_players))
+        
         else:
             flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
             session['form_data'] = data.to_dict()
             return redirect(url_for('paid_details', players=num_players))
+        
     form_data = session.get('form_data', {})
     number_of_players = session.get('num_players')
-    return render_template("paid_details.html", players=number_of_players, form_data=form_data)
+
+    return render_template("paid_details.html", players=number_of_players, form_data=form_data, cash_game=cash_game)
 
 
 # PAID VERSION - RESULTS
@@ -318,16 +349,13 @@ def paid_results():
 
         player_names = [form_data[f'player_{i}'].capitalize() for i in range(num_players)]
         
-        if payer not in player_names or payee not in player_names:
-            flash("One or more of the names entered were not involved in the game.")
-            return redirect(url_for("paid_results"))
-        else: 
-            # Update session with new data
-            previous_data = session.get('extra_data', [])
-            previous_data.append(new_data)
-            session['extra_data'] = previous_data
-            
-            return redirect(url_for("paid_results"))
+
+        # Update session with new data
+        previous_data = session.get('extra_data', [])
+        previous_data.append(new_data)
+        session['extra_data'] = previous_data
+        
+        return redirect(url_for("paid_results"))
     
     num_players = session.get('num_players')
     form_data = session.get('form_data', {})
@@ -428,6 +456,13 @@ def free_details():
     return render_template("player_details.html", players=number_of_players, form_data=form_data)
 
 
+# CLEAR DETAILS TABLE FOR PAID
+@app.route('/paid-clear', methods=['POST', 'GET'])
+def paid_clear():
+    session.pop('form_data', None)
+    return redirect(url_for('paid_details'))
+
+
 # CLEAR DETAILS TABLE
 @app.route('/clear-table', methods=['POST', 'GET'])
 def clear_table():
@@ -450,16 +485,12 @@ def free_results():
 
         player_names = [form_data[f'player_{i}'].capitalize() for i in range(num_players)]
         
-        if payer not in player_names or payee not in player_names:
-            flash("One or more of the names entered were not involved in the game.")
-            return redirect(url_for("free_results"))
-        else: 
-            # Update session with new data
-            previous_data = session.get('extra_data', [])
-            previous_data.append(new_data)
-            session['extra_data'] = previous_data
-            
-            return redirect(url_for("free_results"))
+        # Update session with new data
+        previous_data = session.get('extra_data', [])
+        previous_data.append(new_data)
+        session['extra_data'] = previous_data
+        
+        return redirect(url_for("free_results"))
     
     num_players = session.get('num_players')
     form_data = session.get('form_data', {})

@@ -37,8 +37,10 @@
                             <div class="m-2 text-center">
                                 {% if winnings[i] > 0 %}
                                     <strong style="color: #009C4C;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Won {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
-                                {% else %}
+                                {% elif winnings[i] < 0 %}
                                     <strong style="color: #C8102E;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Lost {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
+                                {% else %}
+                                    <strong class="text-secondary">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Broke even<br>
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -101,16 +103,26 @@
     <div class="bg-light p-4 rounded shadow-sm">
         <h2 class="mb-4">Help Me Settle</h2>
         <form
-        action="{{ url_for('free_results', players=players) }}"
+        action="{{ url_for('paid_results', players=players) }}"
         method="post"
         id="extraData"
         name="extraData">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="payer" placeholder="Payer" required>
+                    <select class="form-select placeholder-style" name="payer" aria-label="Default select" required>
+                        <option selected disabled value="">Payer</option>
+                        {% for i in range(players) %}
+                        <option>{{ form_data.get('player_' ~ i|string, '').capitalize() }}</option>
+                        {% endfor %}
+                      </select>
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="payee" placeholder="Payee" required>
+                    <select class="form-select placeholder-style" name="payee" aria-label="Default select" required>
+                        <option selected disabled value="">Payee</option>
+                        {% for i in range(players) %}
+                        <option>{{ form_data.get('player_' ~ i|string, '').capitalize() }}</option>
+                        {% endfor %}
+                      </select>
                 </div>
                 <div class="col-md-4">
                     <input type="number" class="form-control" name="amount" placeholder="Amount" required>

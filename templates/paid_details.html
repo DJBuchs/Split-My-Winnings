@@ -26,7 +26,14 @@
                 <div class="mb-4">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
-                            <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" value="{{ form_data.get('player_' + i|string, '') }}" placeholder="Name" required>
+                            
+                                <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" list="playerOptions" value="{{ form_data.get('player_' + i|string, '') }}" placeholder="Name" required autocomplete="off">
+                                <datalist id="playerOptions">
+                                    {% for player in cash_game.player_list %}
+                                        <option value="{{ player }}">
+                                    {% endfor %}
+                                </datalist>
+
                         </div>
                         <div class="col-md-4">
                             <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ form_data.get('buyin_' + i|string, '')}}" required>
@@ -48,7 +55,7 @@
                 {% endif %}
             {% endwith %}
             <button class="btn btn-primary" type="submit">Calculate</button>
-            <a href="{{url_for('clear_table')}}" class="btn btn-danger ms-1">Clear</a>
+            <a href="{{url_for('paid_clear')}}" class="btn btn-danger ms-1">Clear</a>
         </form>
     </div>
 </div>
@@ -56,13 +63,3 @@
 
 
 {% include "footer.html" %}
-
-
-<select id="player_{{ i }}" name="player_{{ i }}" class="form-control" required>
-    <option value="" {% if form_data.get('player_' + i|string, '') == '' %}selected{% endif %}>Select a player</option>
-    {% for player in player_names %}
-        <option value="{{ player }}" {% if form_data.get('player_' + i|string, '') == player %}selected{% endif %}>
-            {{ player }}
-        </option>
-    {% endfor %}
-</select>
