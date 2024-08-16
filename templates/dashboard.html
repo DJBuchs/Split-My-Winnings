@@ -1,62 +1,128 @@
 {% include "header.html" %}
 
+
+<style>
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 5%; /* Adjust width for spacing */
+        background-color: white; /* Set background to white */
+        border: none;
+    }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        background-color: transparent; /* Remove background color for the icon */
+        filter: invert(0) brightness(0) contrast(100%); /* Set arrow color to black */
+        width: 2rem; /* Adjust size as needed */
+        height: 2rem;
+    }
+
+    /* Position the arrows slightly outside the carousel */
+    .carousel-control-prev {
+        left: -1.8rem; /* Adjust left position to move it outside */
+    }
+
+    .carousel-control-next {
+        right: -1.8rem; /* Adjust right position to move it outside */
+    }
+
+    #gameCarousel {
+        padding: 0 30px;
+    }
+
+    
+
+</style>
+
 <!-- MY GAMES CONTAINER -->
 <div class="container col-10 my-5">
     <div class="p-4">
         <h2 class="mb-4">My Cash Games</h2>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-    
-            <!-- Repeat above block for each cash game -->
-            {% for i in range(games | length) %}
-            <div class="col-md-4 mb-4">
-                <div class="card bg-light border-orange shadow-lg">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-end">
-                            <div>
-                                <h5 class="card-title text-orange">{{games[i].name}}</h5>
-                                <p class="card-text mb-0">
-                                    <strong class="text-dark">Sessions Played: {{ games[i].sessions }}</strong><br>                                 
-                                    Avg. Buy-ins: <span class="text-primary">${{ "{:.0f}".format(games[i].avg_buyin | float) }}</span><br>
-                                    {% if games[i].amount_won >= 0 %}
-                                    You Won: <span class="text-success">${{ "{:.0f}".format(games[i].amount_won | float) }}</span>
-                                    {% else %}
-                                    You Lost: <span class="text-danger">${{ "{:.0f}".format(games[i].amount_won | float  | abs  ) }}</span>
-                                    {% endif %}
-                                </p>
+        <div class="row">
+            <div class="col-lg-12">
+                <div id="gameCarousel" class="carousel slide" data-bs-interval="false"> <!-- Disable auto-scroll -->
+                    <div class="carousel-inner">
+                        {% set num_cards = games | length %}
+                        {% set num_items = (num_cards + 4) // 4 %} <!-- Calculate total number of items -->
+                        {% for i in range(0, num_items) %}
+                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                            <div class="d-flex">
+                                {% set start = i * 4 %}
+                                {% set end = start + 4 %}
+                                {% if end > num_cards %}
+                                    {% set end = num_cards %}
+                                {% endif %}
+                                {% for j in range(start, end) %}
+                                <div class="col-md-3 px-2">
+                                    <div id="referenceCard" class="card border-orange shadow-sm h-100">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex justify-content-between align-items-end">
+                                                <div>
+                                                    <h5 class="card-title text-orange">{{games[j].name}}</h5>
+                                                    <p class="card-text mb-0">
+                                                        <strong class="text-dark">Sessions Played: {{ games[j].sessions }}</strong><br>                                 
+                                                        Avg. Buy-ins: <span class="text-primary">${{ "{:.0f}".format(games[j].avg_buyin | float) }}</span><br>
+                                                        {% if games[j].amount_won >= 0 %}
+                                                        You Won: <span class="text-success">${{ "{:.0f}".format(games[j].amount_won | float) }}</span>
+                                                        {% else %}
+                                                        You Lost: <span class="text-danger">${{ "{:.0f}".format(games[j].amount_won | float | abs ) }}</span>
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                                <a href="#" class="btn btn-orange btn-sm text-white">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                {% if end == num_cards %}
+                                    <!-- Add the "New Game" card -->
+                                    <div class="col-md-3 px-2">
+                                        <div id="dynamicCard" class="card border-dark shadow-sm h-100">
+                                            <div class="card-body d-flex flex-column justify-content-between text-center align-items-center">
+                                                <div>
+                                                    <h5 class="card-title text-dark mt-1">New Game</h5>
+                                                    <p class="card-text text-secondary mb-2">
+                                                        Create a new poker room.
+                                                    </p>
+                                                </div>
+                                                <a href="{{ url_for('add_game') }}" class="btn btn-outline-dark btn-sm col-6 mb-2">Add Game</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Add empty boxes to fill the remaining space -->
+                                    {% set num_empty_boxes = 4 - (end - start) - 1 %}
+                                    {% for _ in range(num_empty_boxes) %}
+                                    <div class="col-md-3 px-2">
+                                        <div class="card border-light shadow-sm h-100">
+                                            <div class="card-body"></div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
                             </div>
-                            <a href="#" class="btn btn-orange btn-sm text-white">View</a>
                         </div>
+                        {% endfor %}
                     </div>
+                    <!-- Previous Arrow -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#gameCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <!-- Next Arrow -->
+                    <button class="carousel-control-next" type="button" data-bs-target="#gameCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                 </div>
             </div>
-            {% endfor %}
-        
-
-            <!-- add a new card -->
-            <div class="col-md-4 mb-4">
-                <div class="card border-dark shadow-sm h-100">
-                    <div class="card-body d-flex flex-column justify-content-between text-center align-items-center">
-                        <div>
-                            <h5 class="card-title text-dark">New Game</h5>
-                            <p class="card-text text-secondary">
-                                Create a new poker room.
-                            </p>
-                        </div>
-                        <a href="{{ url_for('add_game') }}" class="btn btn-outline-dark btn-sm col-6">Add Game</a>
-                    </div>
-                </div>
-            </div>
-
-
-            
-
         </div>
     </div>
 </div>
 
 
-
-
+<!-- recent history -->
 <div class="container col-10 my-5">
     <div class="bg-light px-4 py-3 rounded shadow-sm">
         <h2 class="mb-3">Recent History</h2>
@@ -119,4 +185,7 @@
     </div>
 </div>
 
+
 {% include "footer.html" %}
+
+

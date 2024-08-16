@@ -190,9 +190,11 @@ def dashboard():
     owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
     game_names = [game.cash_game.cash_name for game in games]
 
+    min_length = min(3, len(games_list))
+
     return render_template("dashboard.html", game_data=game_data, buyins=buyins, date=formatted_dates,
                            owner_data=owner_data, game_name = game_names,
-                           games=games_list)
+                           games=games_list, min_length=min_length)
 
 
 # ADD A POKER GAME
@@ -341,14 +343,8 @@ def paid_results():
     if request.method == 'POST':        
         # Get new form data
         new_data = request.form.to_dict()
-        payer = new_data['payer'].capitalize()
-        payee = new_data['payee'].capitalize()
-
         form_data = session.get('form_data', {})
         num_players = session.get('num_players')
-
-        player_names = [form_data[f'player_{i}'].capitalize() for i in range(num_players)]
-        
 
         # Update session with new data
         previous_data = session.get('extra_data', [])
@@ -477,14 +473,9 @@ def free_results():
     if request.method == 'POST':        
         # Get new form data
         new_data = request.form.to_dict()
-        payer = new_data['payer'].capitalize()
-        payee = new_data['payee'].capitalize()
-
         form_data = session.get('form_data', {})
         num_players = session.get('num_players')
 
-        player_names = [form_data[f'player_{i}'].capitalize() for i in range(num_players)]
-        
         # Update session with new data
         previous_data = session.get('extra_data', [])
         previous_data.append(new_data)
