@@ -180,3 +180,21 @@
     background-color: #8bcdeb; /* Light blue background */
     border-color: #8bcdeb
 }
+
+.border-orange {
+    border-color: #fd7e14;
+}
+
+.text-orange {
+    color: #fd7e14;
+}
+
+.btn-orange {
+    background-color: #fd7e14;
+    color: white; /* Optional: Ensure text is readable */
+    border: 1px solid #fd7e14; /* Optional: Border to match the background color */
+}
+
+.btn-orange:hover {
+    background-color: #e06e14; /* Optional: Darker shade for hover effect */
+}

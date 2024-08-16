@@ -207,7 +207,7 @@ def add_game():
         currency = data['currency']
         new_poker_game = CashGame(
             cash_name=game_name,
-            player_list=[],
+            player_list=[current_user.name],
             currency=currency
         )
         db.session.add(new_poker_game)

@@ -56,3 +56,13 @@
 
 
 {% include "footer.html" %}
+
+
+<select id="player_{{ i }}" name="player_{{ i }}" class="form-control" required>
+    <option value="" {% if form_data.get('player_' + i|string, '') == '' %}selected{% endif %}>Select a player</option>
+    {% for player in player_names %}
+        <option value="{{ player }}" {% if form_data.get('player_' + i|string, '') == player %}selected{% endif %}>
+            {{ player }}
+        </option>
+    {% endfor %}
+</select>
