@@ -126,6 +126,10 @@ def register_success():
 # REGISTER INTEREST
 @app.route('/register', methods=['POST', 'GET'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+
     form = RegisterForm()
     if form.validate_on_submit():
         email_exists = db.session.execute(db.select(User).where(User.email == form.email.data)).scalars().first()
