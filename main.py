@@ -4,7 +4,8 @@ from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime, func
+from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime, func, UniqueConstraint
+from sqlalchemy.exc import IntegrityError
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from typing import List
@@ -46,14 +47,16 @@ db.init_app(app)
 
 
 class User(db.Model, UserMixin):
-    __tablename__ = "blog_users"
+    __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(100), unique=True)
     password: Mapped[str] = mapped_column(String(100))
     name: Mapped[str] = mapped_column(String(1000))
+    # relationship mapping for cash game
+    associated_games: Mapped[List["CashGame"]] = relationship("CashGame", back_populates="associated_user")
     
 
-class GameData(db.Model):
+class GameSession(db.Model):
     __tablename__ = "game_data"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     game_data: Mapped[dict] = mapped_column(JSON)
@@ -70,11 +73,16 @@ class GameData(db.Model):
 class CashGame(db.Model):
     __tablename__ = "poker_game"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    cash_name: Mapped[str] = mapped_column(String(100))
+    cash_name: Mapped[str] = mapped_column(String(100), nullable=False)
     player_list: Mapped[list] = mapped_column(JSON, default=[])
     currency: Mapped[str] = mapped_column(String(10))
     # relationship mapping for game sessions
-    session_data: Mapped[List["GameData"]] = relationship("GameData", back_populates="cash_game")
+    session_data: Mapped[List["GameSession"]] = relationship("GameSession", back_populates="cash_game")
+    # relationship mapping for user
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    associated_user: Mapped["User"] = relationship("User", back_populates="associated_games")
+
+    __table_args__ = (UniqueConstraint('user_id', 'cash_name', name='uix_user_cash_name'),)
 
     
 # with app.app_context():
@@ -129,7 +137,6 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
-
     form = RegisterForm()
     if form.validate_on_submit():
         email_exists = db.session.execute(db.select(User).where(User.email == form.email.data)).scalars().first()
@@ -146,6 +153,14 @@ def register():
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user)
+            new_poker_game = CashGame(
+                cash_name="None",
+                player_list=[current_user.name],
+                currency="$",
+                associated_user=current_user
+            )
+            db.session.add(new_poker_game)
+            db.session.commit()
             return redirect(url_for('register_success'))
     return render_template("register.html", form=form)
 
@@ -156,10 +171,10 @@ def register():
 def dashboard():
     # list of cash games
     result = (
-    db.session.query(CashGame)
-    .outerjoin(GameData)  # Adjust to match your relationship
+    db.session.query(CashGame).where(CashGame.user_id==current_user.id)
+    .outerjoin(GameSession)  # Adjust to match your relationship
     .group_by(CashGame.id)
-    .order_by(func.count(GameData.id).desc(), CashGame.id.desc())
+    .order_by(func.count(GameSession.id).desc(), CashGame.id.desc())
     )
     all_games = result.all()
     games_list = []
@@ -169,7 +184,7 @@ def dashboard():
         num_sessions = len(session_data)
         total_buyins = sum(
         player['buyin']
-        for data in session_data  # Iterate over each GameData instance
+        for data in session_data  # Iterate over each GameSession instance
         for player in data.game_data  # Iterate over each player in game_data
         )
         avg_buyins = total_buyins / num_sessions if num_sessions > 0 else 0
@@ -183,7 +198,8 @@ def dashboard():
         'name': game.cash_name,
         'sessions': num_sessions,
         'avg_buyin': avg_buyins,
-        'amount_won': amount_won
+        'amount_won': amount_won,
+        'currency': game.currency
         })
 
     # 3 most recent games
@@ -193,12 +209,15 @@ def dashboard():
     buyins = [sum(data['buyin'] for data in game) for game in game_data]
     owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
     game_names = [game.cash_game.cash_name for game in games]
+    session_id = [game.id for game in games]
+    currency = [game.cash_game.currency for game in games]
 
     min_length = min(3, len(games_list))
 
     return render_template("dashboard.html", game_data=game_data, buyins=buyins, date=formatted_dates,
                            owner_data=owner_data, game_name = game_names,
-                           games=games_list, min_length=min_length)
+                           games=games_list, min_length=min_length,
+                           session_id=session_id, currency=currency)
 
 
 # ADD A POKER GAME
@@ -211,13 +230,31 @@ def add_game():
         new_poker_game = CashGame(
             cash_name=game_name,
             player_list=[current_user.name],
-            currency=currency
+            currency=currency,
+            associated_user=current_user
         )
         db.session.add(new_poker_game)
-        db.session.commit()
-        return redirect(url_for('dashboard'))
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("A game with this name already exists. Please choose a different name.")
+            return redirect(url_for('add_game'))
+        else:
+            return redirect(url_for('dashboard'))
 
     return render_template('add_game.html')
+
+
+# DELETE A POKER SESSION
+@app.route('/delete-session', methods=['POST', 'GET'])
+def delete_session():
+    session_id = request.args.get('session_id')
+    session_to_delete = db.get_or_404(GameSession, session_id)
+    db.session.delete(session_to_delete)
+    db.session.commit()
+    return redirect(url_for('dashboard'))
+
 
 # CONTACT US
 @app.route('/contact-us', methods=['POST', 'GET'])
@@ -267,7 +304,7 @@ def contact_footer():
 # PAID VERSION - NUMBER OF PLAYERS + GAME
 @app.route('/player-count', methods=['POST', 'GET'])
 def player_count():
-    result = db.session.execute(db.select(CashGame).order_by(CashGame.id))
+    result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
     all_games = result.scalars().all()
     cash_list = [game.cash_name for game in all_games]
 
@@ -287,7 +324,7 @@ def player_count():
 def paid_details():
     # pull the poker game chosen
     game_name = session.get('session_game')
-    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name).first()
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
     if request.method == 'POST':
 
         data = request.form
@@ -384,7 +421,7 @@ def paid_results():
     # pass currency from game chosen
 
     game_name = session.get('session_game')
-    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name).first()
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
 
     return render_template("paid_results.html", form_data=form_data, 
                            players=num_players, settlements=settlements,
@@ -406,10 +443,10 @@ def save_data():
         }
         game_data.append(player)
     game_name = session.get('session_game')
-    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name).first()
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
 
 
-    new_game = GameData(game_data=game_data, cash_game=cash_game)
+    new_game = GameSession(game_data=game_data, cash_game=cash_game)
     db.session.add(new_game)
     db.session.commit()
 
@@ -429,7 +466,6 @@ def free_player_count():
             session['num_players'] = int(number_of_players)
             return redirect(url_for('free_details', players=number_of_players))
     return render_template("player_count.html")
-
 
 
 # FREE VERSION - INPUTS FOR CASH GAME
@@ -569,7 +605,15 @@ def get_ordinal_suffix(day):
     
 
 def get_recent_games(limit=3):
-    return db.session.query(GameData).order_by(GameData.date.desc()).limit(limit).all()
+    result = (
+        db.session.query(GameSession)
+        .join(GameSession.cash_game)  # Join through the CashGame relationship
+        .filter(CashGame.user_id == current_user.id)  # Filter by the current user
+        .order_by(GameSession.date.desc())  # Order by the date of the GameSession
+        .limit(limit)  # Limit the number of results
+        .all()
+    )
+    return result
 
 
 if __name__ == "__main__":

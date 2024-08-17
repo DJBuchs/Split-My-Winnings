@@ -33,6 +33,17 @@
                         </div>
                     </div>
                     <div class="col-12">
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            <div class="alert alert-danger p-2 mt-0 text-center" role="alert">
+                            {% for message in messages %}
+                                {{message}}
+                            {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    </div>
+                    <div class="col-12">
                         {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
