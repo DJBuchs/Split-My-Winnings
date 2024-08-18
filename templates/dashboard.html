@@ -211,7 +211,7 @@
 
                         </div>
                         <div class="col-md-2 text-end">
-                            <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                            <a href="{{ url_for('edit_session', session=session_id[i]) }}" class="btn btn-sm btn-outline-primary me-2" role="button">Edit</a>
                             <!-- Button to trigger modal -->
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ session_id[i] }}">
                                     Delete

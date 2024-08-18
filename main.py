@@ -27,6 +27,23 @@ Bootstrap5(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+def current_user_only(f):
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        session_id = request.args.get('session')
+        if not session_id:
+            abort(400, description="Session ID is required")
+
+        poker_session = db.session.execute(db.select(GameSession).where(GameSession.id == session_id)).scalar()
+        if not poker_session or not poker_session.cash_game:
+            abort(404, description="Session or associated game not found")
+
+        if current_user.id != poker_session.cash_game.user_id:
+            abort(403, description="Access forbidden: You do not own this session")
+
+        return f(*args, **kwargs)
+    return decorator
+
 
 app.config['SEND_EMAIL'] = os.getenv("SEND_EMAIL")
 app.config['EMAIL_PASS'] = os.getenv("EMAIL_PASS")
@@ -127,6 +144,7 @@ def thank_you():
 
 # WELCOME PAGE
 @app.route('/registration_success')
+@login_required
 def register_success():
     return render_template("register_success.html")
 
@@ -222,6 +240,7 @@ def dashboard():
 
 # ADD A POKER GAME
 @app.route('/add-game', methods=['POST', 'GET'])
+@login_required
 def add_game():
     if request.method == 'POST':
         data = request.form
@@ -251,9 +270,91 @@ def add_game():
 def delete_session():
     session_id = request.args.get('session_id')
     session_to_delete = db.get_or_404(GameSession, session_id)
-    db.session.delete(session_to_delete)
-    db.session.commit()
+    if current_user.id == session_to_delete.cash_game.user_id:
+        db.session.delete(session_to_delete)
+        db.session.commit()
+    else:
+        return abort(403, description="Access forbidden: You do not own this session")
     return redirect(url_for('dashboard'))
+
+
+# EDIT A POKER SESSION
+@app.route('/edit-session', methods=['POST', 'GET'])
+@current_user_only
+def edit_session():
+    # get the speicific session and related game
+    session_id = request.args.get('session')
+    session_to_edit = db.session.execute(db.select(GameSession).where(GameSession.id == session_id)).scalar()
+    cash_game = session_to_edit.cash_game
+
+    # get the list of cash games
+    result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
+    all_games = result.scalars().all()
+    cash_list = [game.cash_name for game in all_games]
+
+    if request.method == 'POST':
+
+        data = request.form
+        num_players = len(session_to_edit.game_data)
+        buy_ins = 0
+        cash_outs = 0
+        for i in range(num_players):
+            buy_ins += int(data[f'buyin_{i}'])
+            cash_outs += int(data[f'cashout_{i}']) 
+
+        if buy_ins == cash_outs:
+
+            player_names = set()
+            for i in range(num_players):
+                player_name = data[f"player_{i}"]
+            
+                if player_name in player_names:
+                    flash('Cannot have two players with the same name.')
+                    return redirect(url_for('edit_session', session=session_id))
+                
+                player_names.add(player_name)
+
+            if data['selected_game'] != cash_game.cash_name:
+                new_cash_game = db.session.execute(db.select(CashGame).where(CashGame.cash_name == data['selected_game'],
+                CashGame.user_id == current_user.id)).scalar()
+                session_to_edit.cash_game_id = new_cash_game.id
+                db.session.commit()
+                cash_game = new_cash_game
+                    
+            # add player names to db
+            player_list = cash_game.player_list.copy()
+            changed = False
+            for i in range(num_players):
+                player_name = data[f"player_{i}"].capitalize()
+                if player_name not in player_list:
+                    player_list.append(player_name)
+                    changed = True
+
+            if changed:
+                cash_game.player_list = player_list
+                db.session.commit()
+
+            # update session in db
+            updated_game_data = []
+            for i in range(num_players):
+                player = {
+                    'name': data[f'player_{i}'].capitalize(),
+                    'buyin': float(data[f'buyin_{i}']),
+                    'cashout': float(data[f'cashout_{i}'])
+                }
+                updated_game_data.append(player)
+
+
+            session_to_edit.game_data = updated_game_data
+            db.session.commit()
+
+            return redirect(url_for('dashboard'))
+        
+        else:
+            flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
+            return redirect(url_for('edit_session', session=session_id))
+        
+    return render_template('edit_session.html', session=session_to_edit, poker_game=cash_game, cash_games=cash_list)
 
 
 # CONTACT US
@@ -303,6 +404,7 @@ def contact_footer():
 
 # PAID VERSION - NUMBER OF PLAYERS + GAME
 @app.route('/player-count', methods=['POST', 'GET'])
+@login_required
 def player_count():
     result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
     all_games = result.scalars().all()
@@ -321,6 +423,7 @@ def player_count():
 
 # PAID VERSION - INPUTS FOR CASH GAME
 @app.route('/player-details', methods=['POST', 'GET'])
+@login_required
 def paid_details():
     # pull the poker game chosen
     game_name = session.get('session_game')
@@ -331,6 +434,9 @@ def paid_details():
         num_players = session.get('num_players')
         buy_ins = 0
         cash_outs = 0
+        for i in range(num_players):
+            buy_ins += int(data[f'buyin_{i}'])
+            cash_outs += int(data[f'cashout_{i}']) 
 
         if buy_ins == cash_outs:
 
@@ -358,7 +464,6 @@ def paid_details():
 
             if changed:
                 cash_game.player_list = player_list
-                print(player_list)
                 db.session.commit()
 
             session['form_data'] = data.to_dict()
@@ -379,6 +484,7 @@ def paid_details():
 
 # PAID VERSION - RESULTS
 @app.route('/results', methods=['POST', 'GET'])
+@login_required
 def paid_results():
 
     if request.method == 'POST':        
@@ -431,6 +537,7 @@ def paid_results():
 
 # SAVE GAME DATA
 @app.route('/save-data', methods=['POST', 'GET'])
+@login_required
 def save_data():
     form_data = session.get('form_data', {})
     num_players = session.get('num_players')
@@ -494,6 +601,7 @@ def free_details():
 
 # CLEAR DETAILS TABLE FOR PAID
 @app.route('/paid-clear', methods=['POST', 'GET'])
+@login_required
 def paid_clear():
     session.pop('form_data', None)
     return redirect(url_for('paid_details'))
