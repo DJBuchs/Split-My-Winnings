@@ -1,5 +1,5 @@
 from datetime import date
-from flask import Flask, abort, render_template, redirect, url_for, flash, request, session
+from flask import Flask, abort, render_template, redirect, url_for, flash, request, session, jsonify
 from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
@@ -15,7 +15,9 @@ import smtplib
 import bleach
 import secrets
 from forms import RegisterForm, LoginForm
-from datetime import datetime
+from datetime import datetime, timedelta
+import pandas as pd
+
 
 load_dotenv()
 
@@ -236,6 +238,96 @@ def dashboard():
                            owner_data=owner_data, game_name = game_names,
                            games=games_list, min_length=min_length,
                            session_id=session_id, currency=currency)
+
+
+# VIEW POKER GAME
+@app.route('/view-game')
+def view_game():
+    return render_template("view_game.html")
+
+
+# PERSONAL CHART DATA
+@app.route('/get_chart_data')
+def get_chart_data():
+    today = datetime.now()
+
+    # Fetch games and sessions for the current user
+    associated_games = db.session.execute(db.select(CashGame).where(CashGame.user_id == current_user.id)).scalars().all()
+    cash_game_ids = [associated_game.id for associated_game in associated_games]
+    associated_sessions = db.session.execute(
+    db.select(GameSession).where(GameSession.cash_game_id.in_(cash_game_ids))
+    ).scalars().all()
+    
+    # Initialize lists to collect data
+    buyins_all = []
+    cashouts_all = []
+    net_profits_all = []
+    buyins_3m = []
+    cashouts_3m = []
+    net_profits_3m = []
+    buyins_1m = []
+    cashouts_1m = []
+    net_profits_1m = []
+    buyins_1w = []
+    cashouts_1w = []
+    net_profits_1w = []
+
+    for session in associated_sessions:
+        for player_data in session.game_data:
+            if player_data['name'] == current_user.name:  # Check if the player is the current user
+                buyin = player_data['buyin']
+                cashout = player_data['cashout']
+                net_profit = cashout - buyin
+                date = session.date
+
+                # All time
+                buyins_all.append(buyin)
+                cashouts_all.append(cashout)
+                net_profits_all.append(net_profit)
+
+                # Last 3 months
+                if date >= today - timedelta(days=90):
+                    buyins_3m.append(buyin)
+                    cashouts_3m.append(cashout)
+                    net_profits_3m.append(net_profit)
+
+                # Last month
+                if date >= today - timedelta(days=30):
+                    buyins_1m.append(buyin)
+                    cashouts_1m.append(cashout)
+                    net_profits_1m.append(net_profit)
+
+                # Last week
+                if date >= today - timedelta(days=7):
+                    buyins_1w.append(buyin)
+                    cashouts_1w.append(cashout)
+                    net_profits_1w.append(net_profit)
+
+    # Aggregate the results
+    results = {
+        'all_time': {
+            'buyins': sum(buyins_all),
+            'cashouts': sum(cashouts_all),
+            'net_profits': sum(net_profits_all),
+        },
+        'last_3_months': {
+            'buyins': sum(buyins_3m),
+            'cashouts': sum(cashouts_3m),
+            'net_profits': sum(net_profits_3m),
+        },
+        'last_month': {
+            'buyins': sum(buyins_1m),
+            'cashouts': sum(cashouts_1m),
+            'net_profits': sum(net_profits_1m),
+        },
+        'last_week': {
+            'buyins': sum(buyins_1w),
+            'cashouts': sum(cashouts_1w),
+            'net_profits': sum(net_profits_1w),
+        }
+    }
+
+    return jsonify(results)
 
 
 # ADD A POKER GAME

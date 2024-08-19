@@ -38,13 +38,3 @@ class LoginForm(FlaskForm):
         label='Sign In',
         render_kw={"class": "btn btn-primary"}
         )
-    
-
-class PlayerForm(FlaskForm):
-    player_name = StringField('Player Name', validators=[DataRequired()])
-    buyin = DecimalField('Buy-in Amount', validators=[DataRequired(), NumberRange(min=0)], places=2)
-    cashout = DecimalField('Cash-out Amount', validators=[DataRequired(), NumberRange(min=0)], places=2)
-
-
-class EditGameForm(FlaskForm):
-    players = FieldList(FormField(PlayerForm), min_entries=1)

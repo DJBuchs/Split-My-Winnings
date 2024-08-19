@@ -198,3 +198,10 @@
 .btn-orange:hover {
     background-color: #e06e14; /* Optional: Darker shade for hover effect */
 }
+
+#myChart {
+    background-color: #ffffff; /* White background for the chart area */
+    border-radius: 0.5rem; /* Rounded corners */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 30px; /* Padding around the chart */
+}
