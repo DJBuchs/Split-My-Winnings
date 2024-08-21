@@ -72,15 +72,15 @@
                                                     <h5 class="card-title text-orange">{{ games[j].name }}</h5>
                                                     <p class="card-text mb-0">
                                                         <strong class="text-dark">Sessions Played: {{ games[j].sessions }}</strong><br>
-                                                        Avg. Buy-ins: <span class="text-primary">{{ games[j].currency }}{{ "{:.0f}".format(games[j].avg_buyin | float) }}</span><br>
+                                                        Avg. Buy-ins: <span class="text-primary">{{ games[j].currency }}{{ "{:,.0f}".format(games[j].avg_buyin | float) }}</span><br>
                                                         {% if games[j].amount_won >= 0 %}
-                                                        You Won: <span class="text-success">{{ games[j].currency }}{{ "{:.0f}".format(games[j].amount_won | float) }}</span>
+                                                        You Won: <span class="text-success">{{ games[j].currency }}{{ "{:,.0f}".format(games[j].amount_won | float) }}</span>
                                                         {% else %}
-                                                        You Lost: <span class="text-danger">{{ games[j].currency }}{{ "{:.0f}".format(games[j].amount_won | float | abs) }}</span>
+                                                        You Lost: <span class="text-danger">{{ games[j].currency }}{{ "{:,.0f}".format(games[j].amount_won | float | abs) }}</span>
                                                         {% endif %}
                                                     </p>
                                                 </div>
-                                                <a href="#" class="btn btn-orange btn-sm text-white">View</a>
+                                                <a href="{{ url_for('view_game', game_id=games[j].id) }}" class="btn btn-orange btn-sm text-white">View</a>
                                             </div>
                                         </div>
                                     </div>
@@ -119,11 +119,11 @@
                                                     <h5 class="card-title text-orange">{{ games[j].name }}</h5>
                                                     <p class="card-text mb-0">
                                                         <strong class="text-dark">Sessions Played: {{ games[j].sessions }}</strong><br>
-                                                        Avg. Buy-ins: <span class="text-primary">${{ "{:.0f}".format(games[j].avg_buyin | float) }}</span><br>
+                                                        Avg. Buy-ins: <span class="text-primary">${{ "{:,.0f}".format(games[j].avg_buyin | float) }}</span><br>
                                                         {% if games[j].amount_won >= 0 %}
-                                                        You Won: <span class="text-success">${{ "{:.0f}".format(games[j].amount_won | float) }}</span>
+                                                        You Won: <span class="text-success">${{ "{:,.0f}".format(games[j].amount_won | float) }}</span>
                                                         {% else %}
-                                                        You Lost: <span class="text-danger">${{ "{:.0f}".format(games[j].amount_won | float | abs) }}</span>
+                                                        You Lost: <span class="text-danger">${{ "{:,.0f}".format(games[j].amount_won | float | abs) }}</span>
                                                         {% endif %}
                                                     </p>
                                                 </div>
@@ -202,16 +202,16 @@
                             <small class="text-muted">Players</small>
                         </div>
                         <div class="col-md-2">
-                            <div class="fw-bold text-primary">{{ currency[i] }}{{ "{:.0f}".format(buyins[i] | float) }}</div>
+                            <div class="fw-bold text-primary">{{ currency[i] }}{{ "{:,.0f}".format(buyins[i] | float) }}</div>
                             <small class="text-muted">Total Buyins</small>
                         </div>
                         <div class="col-md-2">
                             {% if owner_data[i] or owner_data[i] == 0 %}
                                 {% if owner_data[i] > 0 %}
-                                    <div class="fw-bold text-success">{{ currency[i] }}{{ "{:.0f}".format(owner_data[i] | float) }}</div>
+                                    <div class="fw-bold text-success">{{ currency[i] }}{{ "{:,.0f}".format(owner_data[i] | float) }}</div>
                                     <small class="text-muted">You Won</small>
                                 {% elif owner_data[i] < 0 %}
-                                    <div class="fw-bold text-danger">{{ currency[i] }}{{ "{:.0f}".format(owner_data[i] | float  | abs  ) }}</div>
+                                    <div class="fw-bold text-danger">{{ currency[i] }}{{ "{:,.0f}".format(owner_data[i] | float  | abs  ) }}</div>
                                     <small class="text-muted">You Lost</small>
                                 {% elif owner_data[i] == 0 %}
                                     <div class="fw-bold text-dark">-</div>

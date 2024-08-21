@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('myChart').getContext('2d');
 
     function fetchDataAndCreateChart() {
-        fetch('/get_chart_data')
+        fetch(`/dash_chart_data`)
             .then(response => response.json())
             .then(data => {
                 const config = {
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 borderWidth: 1
                             },
                             {
-                                label: 'Net Profit',
+                                label: 'Winnings',
                                 data: [data.all_time.net_profits, data.last_3_months.net_profits, data.last_month.net_profits, data.last_week.net_profits],
                                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                                 borderColor: 'rgb(54, 162, 235)',
@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     options: {
                         responsive: true,
+                        
                         plugins: {
                             legend: {
                                 position: 'top',
@@ -42,6 +43,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                     boxWidth: 40,
                                     padding: 20
                                 },
+                                title: {
+                                    display: true,
+                                    text: 'Your Performance',
+                                    
+                                    font: {
+                                        family: 'Arial', // Font family
+                                        size: 18, // Font size
+                                        weight: 'bold', // Font weight
+                                    }},
                                 padding: {
                                     bottom: 100 // This creates space between the legend and the chart
                                 }
@@ -70,4 +80,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
     fetchDataAndCreateChart();
 });
-

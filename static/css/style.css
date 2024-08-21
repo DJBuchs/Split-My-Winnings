@@ -62,7 +62,7 @@
 }
 
 .custom-container {
-    max-width: 800px; /* Maximum width of the container */
+    max-width: 900px; /* Maximum width of the container */
     margin: auto; /* Center the container */
 
 }
@@ -141,15 +141,12 @@
     background-color: #5AB03F; 
     border-color: #5AB03F; 
     color: #fff; /* White text color */
-    padding: 10px 20px; /* Padding for the button */
-    border-radius: 4px; /* Rounded corners */
-    font-weight: bold; /* Bold text */
-    width: 100%; /* Full-width button */
 }
 
 .btn-contact:hover {
     background-color: #68C24F;
     border-color: #68C24F; 
+    color: #fff;
 }
 
 .custom-card {
@@ -200,6 +197,13 @@
 }
 
 #myChart {
+    background-color: #ffffff; /* White background for the chart area */
+    border-radius: 0.5rem; /* Rounded corners */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 30px; /* Padding around the chart */
+}
+
+#viewChart {
     background-color: #ffffff; /* White background for the chart area */
     border-radius: 0.5rem; /* Rounded corners */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */

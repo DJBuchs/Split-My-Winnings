@@ -16,7 +16,6 @@ import bleach
 import secrets
 from forms import RegisterForm, LoginForm
 from datetime import datetime, timedelta
-import pandas as pd
 
 
 load_dotenv()
@@ -204,7 +203,7 @@ def dashboard():
         num_sessions = len(session_data)
         total_buyins = sum(
         player['buyin']
-        for data in session_data  # Iterate over each GameSession instance
+        for data in session_data  
         for player in data.game_data  # Iterate over each player in game_data
         )
         avg_buyins = total_buyins / num_sessions if num_sessions > 0 else 0
@@ -219,13 +218,14 @@ def dashboard():
         'sessions': num_sessions,
         'avg_buyin': avg_buyins,
         'amount_won': amount_won,
-        'currency': game.currency
+        'currency': game.currency,
+        'id': game.id,
         })
 
     # 3 most recent games
     games = get_recent_games()
     game_data = [game.game_data for game in games]
-    formatted_dates = [game.date.strftime("%A %d{} %B").format(get_ordinal_suffix(game.date.day)) for game in games]
+    formatted_dates = [game.date.strftime(f"%A %d{get_ordinal_suffix(game.date.day)} %B") for game in games]
     buyins = [sum(data['buyin'] for data in game) for game in game_data]
     owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
     game_names = [game.cash_game.cash_name for game in games]
@@ -243,12 +243,89 @@ def dashboard():
 # VIEW POKER GAME
 @app.route('/view-game')
 def view_game():
-    return render_template("view_game.html")
+    # game and sessions for chosen game
+    game_id = request.args.get('game_id')
+    cash_game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).scalars().first()
+    sessions = db.session.execute(db.select(GameSession).where(GameSession.cash_game_id == game_id)).scalars().all()
+    sessions.reverse()
+
+    # data for game history
+    game_data = [session.game_data for session in sessions]
+    buyins = [sum(data['buyin'] for data in game) for game in game_data]
+    owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
+    formatted_dates = [session.date.strftime(f"%A %d{get_ordinal_suffix(session.date.day)} %B") for session in sessions]
+
+    # Calculate player statistics
+    player_stats = []
+
+    for session in sessions:
+        for player_data in session.game_data:
+            player_name = player_data['name']
+            buyin = player_data['buyin']
+            cashout = player_data['cashout']
+
+            # Find the player in the list
+            player = next((p for p in player_stats if p['name'] == player_name), None)
+
+            if player is None:
+                # Player not in list, add new entry
+                player_stats.append({
+                    'name': player_name,
+                    'total_sessions': 1,
+                    'total_buyin': buyin,
+                    'total_cashout': cashout
+                })
+            else:
+                # Player found, update their stats
+                player['total_sessions'] += 1
+                player['total_buyin'] += buyin
+                player['total_cashout'] += cashout
+
+    # Finalize player statistics
+    for player in player_stats:
+        player['average_buyin'] = player['total_buyin'] / player['total_sessions']
+        player['net'] = player['total_cashout'] - player['total_buyin']
+
+    current_user_name = current_user.name
+
+    # Sort player_stats
+    player_stats_sorted = sorted(
+        player_stats,
+        key=lambda p: (
+            p['name'] != current_user_name,     # Ensure current_user_name is first
+            -p['total_sessions'],               # Sort by number of sessions (descending)
+            -p['average_buyin']                 # Sort by average buyin (descending)
+        )
+    )
+
+    # Header stats
+    biggest_win = {'amount': float('-inf'), 'name': None}
+    biggest_loss = {'amount': float('inf'), 'name': None}
+
+    for session in sessions:
+        for player_data in session.game_data:
+            p_name = player_data['name']
+            net = player_data['cashout'] - player_data['buyin']
+
+            if net > biggest_win['amount']:
+                biggest_win = {'amount': net, 'name': p_name}
+
+            if net < biggest_loss['amount']:
+                biggest_loss = {'amount': net, 'name': p_name}
 
 
-# PERSONAL CHART DATA
-@app.route('/get_chart_data')
-def get_chart_data():
+
+    
+    total_wagered = sum(buyins)
+
+    return render_template("view_game.html", game=cash_game, sessions=sessions, dates=formatted_dates, buyins=buyins,
+                            owner_data=owner_data, stats=player_stats_sorted, total_wagered=total_wagered,
+                            biggest_loss=biggest_loss, biggest_win=biggest_win)
+
+
+# DASHBOARD CHART DATA
+@app.route('/dash_chart_data')
+def dash_chart_data():
     today = datetime.now()
 
     # Fetch games and sessions for the current user
@@ -257,6 +334,88 @@ def get_chart_data():
     associated_sessions = db.session.execute(
     db.select(GameSession).where(GameSession.cash_game_id.in_(cash_game_ids))
     ).scalars().all()
+    
+    # Initialize lists
+    buyins_all = []
+    cashouts_all = []
+    net_profits_all = []
+    buyins_3m = []
+    cashouts_3m = []
+    net_profits_3m = []
+    buyins_1m = []
+    cashouts_1m = []
+    net_profits_1m = []
+    buyins_1w = []
+    cashouts_1w = []
+    net_profits_1w = []
+
+    for session in associated_sessions:
+        for player_data in session.game_data:
+            if player_data['name'] == current_user.name:  # Check if the player is the current user
+                buyin = player_data['buyin']
+                cashout = player_data['cashout']
+                net_profit = cashout - buyin
+                date = session.date
+
+                # All time
+                buyins_all.append(buyin)
+                cashouts_all.append(cashout)
+                net_profits_all.append(net_profit)
+
+                # Last 3 months
+                if date >= today - timedelta(days=90):
+                    buyins_3m.append(buyin)
+                    cashouts_3m.append(cashout)
+                    net_profits_3m.append(net_profit)
+
+                # Last month
+                if date >= today - timedelta(days=30):
+                    buyins_1m.append(buyin)
+                    cashouts_1m.append(cashout)
+                    net_profits_1m.append(net_profit)
+
+                # Last week
+                if date >= today - timedelta(days=7):
+                    buyins_1w.append(buyin)
+                    cashouts_1w.append(cashout)
+                    net_profits_1w.append(net_profit)
+
+    # Aggregate the results
+    results = {
+        'all_time': {
+            'buyins': sum(buyins_all),
+            'cashouts': sum(cashouts_all),
+            'net_profits': sum(net_profits_all),
+        },
+        'last_3_months': {
+            'buyins': sum(buyins_3m),
+            'cashouts': sum(cashouts_3m),
+            'net_profits': sum(net_profits_3m),
+        },
+        'last_month': {
+            'buyins': sum(buyins_1m),
+            'cashouts': sum(cashouts_1m),
+            'net_profits': sum(net_profits_1m),
+        },
+        'last_week': {
+            'buyins': sum(buyins_1w),
+            'cashouts': sum(cashouts_1w),
+            'net_profits': sum(net_profits_1w),
+        }
+    }
+
+    return jsonify(results)
+
+
+# VIEW GAME CHART DATA
+@app.route('/view_chart_data')
+def view_chart_data():
+    today = datetime.now()
+    
+    # Fetch games and sessions for the current game
+    game_id = request.args.get('game_id')
+    print(game_id)
+    sessions = db.session.execute(db.select(GameSession).where(GameSession.cash_game_id == game_id)).scalars().all()
     
     # Initialize lists to collect data
     buyins_all = []
@@ -272,7 +431,7 @@ def get_chart_data():
     cashouts_1w = []
     net_profits_1w = []
 
-    for session in associated_sessions:
+    for session in sessions:
         for player_data in session.game_data:
             if player_data['name'] == current_user.name:  # Check if the player is the current user
                 buyin = player_data['buyin']
@@ -357,14 +516,36 @@ def add_game():
     return render_template('add_game.html')
 
 
+# EDIT A POKER GAME
+@app.route('/edit-game', methods=['POST', 'GET'])
+@current_user_only
+def edit_game():
+    pass
+
+
+# DELETE A POKER GAME
+@app.route('/delete-game', methods=['POST', 'GET'])
+@current_user_only
+def delete_game():
+    pass
+
+
 # DELETE A POKER SESSION
 @app.route('/delete-session', methods=['POST', 'GET'])
 def delete_session():
     session_id = request.args.get('session_id')
     session_to_delete = db.get_or_404(GameSession, session_id)
+    game_id = session_to_delete.cash_game_id
     if current_user.id == session_to_delete.cash_game.user_id:
         db.session.delete(session_to_delete)
         db.session.commit()
+
+        # check view_game
+        view_game = None
+        if request.args.get('view_game'):
+            view_game = True
+
+            return redirect(url_for('view_game', game_id=game_id))
     else:
         return abort(403, description="Access forbidden: You do not own this session")
     return redirect(url_for('dashboard'))
@@ -378,11 +559,17 @@ def edit_session():
     session_id = request.args.get('session')
     session_to_edit = db.session.execute(db.select(GameSession).where(GameSession.id == session_id)).scalar()
     cash_game = session_to_edit.cash_game
+    game_id = cash_game.id
 
     # get the list of cash games
     result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
     all_games = result.scalars().all()
     cash_list = [game.cash_name for game in all_games]
+
+    # check view_game
+    view_game = None
+    if request.args.get('view_game'):
+        view_game = True
 
     if request.method == 'POST':
 
@@ -440,13 +627,18 @@ def edit_session():
             session_to_edit.game_data = updated_game_data
             db.session.commit()
 
+            if view_game:
+                return redirect(url_for('view_game', game_id=game_id))
+
             return redirect(url_for('dashboard'))
         
         else:
             flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
             return redirect(url_for('edit_session', session=session_id))
+    
         
-    return render_template('edit_session.html', session=session_to_edit, poker_game=cash_game, cash_games=cash_list)
+    return render_template('edit_session.html', session=session_to_edit, poker_game=cash_game, cash_games=cash_list,
+                           view_game=view_game)
 
 
 # CONTACT US

@@ -36,9 +36,9 @@
                             {% for i in range(players) %}
                             <div class="m-2 text-center">
                                 {% if winnings[i] > 0 %}
-                                    <strong style="color: #009C4C;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Won {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
+                                    <strong style="color: #009C4C;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Won {{ "{:,.0f}".format(winnings[i]|abs) }} chips<br>
                                 {% elif winnings[i] < 0 %}
-                                    <strong style="color: #C8102E;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Lost {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
+                                    <strong style="color: #C8102E;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Lost {{ "{:,.0f}".format(winnings[i]|abs) }} chips<br>
                                 {% else %}
                                     <strong class="text-secondary">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Broke even<br>
                                 {% endif %}
@@ -78,7 +78,7 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ settlement.ower }}</h5>
                         <p class="card-text">
-                            <strong>Amount:</strong> {{ cash_game.currency }}{{ "{:.0f}".format(settlement.amount | float) }}<br>
+                            <strong>Amount:</strong> {{ cash_game.currency }}{{ "{:,.0f}".format(settlement.amount | float) }}<br>
                             <strong>Owed to:</strong> {{ settlement.owed }}
                         </p>
                     </div>

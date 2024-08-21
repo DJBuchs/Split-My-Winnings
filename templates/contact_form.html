@@ -1,15 +1,19 @@
 {% include "header.html" %}
+
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+
 <body style="background-color: #f8f9fa;">
     <div class="custom-container vertically-center">
-        <div class="custom-bg p-4 rounded shadow-sm d-flex align-items-center">
+        <div class="custom-bg p-5 rounded shadow-sm d-flex align-items-center">
             <!-- Left Column for Image -->
-            <div class="custom-image-col d-none d-md-block">
+            <div class="custom-image-col d-none d-md-block me-5">
                 <img src="../static/images/contact_img.png" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
             </div>
 
 <!-- Right Column for Form -->
-<div class="custom-form-col ms-5 mx-2">
-    <h2 class="h2-form custom-title mb-4">Contact us</h2>
+<div class="custom-form-col mx-2 ms-5">
+    <h2 class="h2-form custom-title mb-4" style="font-family: 'Montserrat', sans-serif; font-size: 2rem; font-weight: 700;">Contact us</h2>
     <form
         action="{{ url_for('contact_form') }}"
         method="post"
@@ -27,6 +31,7 @@
                     class="form-control" 
                     placeholder="Name"
                     required
+                    autocomplete="off"
                 >
                 <label for="name">Name</label>
             </div>
@@ -41,6 +46,7 @@
                     class="form-control" 
                     placeholder="Email"
                     required
+                    autocomplete="off"
                 >
                 <label for="email">Email</label>
             </div>
@@ -59,7 +65,7 @@
             </div>
         </div>
         <div class="col-12">
-            <button class="btn-contact mb-3" type="submit">Send Email</button>
+            <button class="btn col-12 btn-contact mb-3 py-2" type="submit">Send Email</button>
         </div>
     </form>
 </div>
