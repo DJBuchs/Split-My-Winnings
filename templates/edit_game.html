@@ -1,0 +1,40 @@
+{% include "header.html" %}
+
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">Edit Game</h2>
+        <form
+        action="{{url_for('edit_game, game_id=game.id')}}"
+        method="post"
+        id="editGame"
+        name="editGame">
+            <div class="mb-3">
+                <input type="text" id="name" name="name" class="form-control" placeholder="Game Name" value="{{game.cash_name}}" required autocomplete="off">
+            </div>
+            <div class="mb-3">
+                <select class="form-select placeholder-style" name="currency" aria-label="Default select" required>
+                    <option selected disabled value="">Currency</option>
+                    {% for currency in currency_list %}
+                        <option value="{{ currency }}" {% if currency == game.currency %}selected{% endif %}>
+                            {{ currency }}
+                        </option>
+                    {% endfor %}
+                  </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+        {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="alert alert-danger" role="alert">
+                    {% for message in messages %}
+                        {{message}}
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+    </div>
+</div>
+
+
+
+{% include "footer.html" %}

@@ -11,14 +11,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         labels: ['All Time', 'Last 3 Months', 'Last Month', 'Last Week'],
                         datasets: [
                             {
-                                label: 'Buyins',
+                                label: 'Avg Buyin',
                                 data: [data.all_time.buyins, data.last_3_months.buyins, data.last_month.buyins, data.last_week.buyins],
                                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
                                 borderColor: 'rgb(255, 99, 132)',
                                 borderWidth: 1
                             },
                             {
-                                label: 'Cashouts',
+                                label: 'Avg Cashout',
                                 data: [data.all_time.cashouts, data.last_3_months.cashouts, data.last_month.cashouts, data.last_week.cashouts],
                                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                                 borderColor: 'rgb(75, 192, 192)',

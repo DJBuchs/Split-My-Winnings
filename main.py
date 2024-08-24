@@ -383,23 +383,23 @@ def dash_chart_data():
     # Aggregate the results
     results = {
         'all_time': {
-            'buyins': sum(buyins_all),
-            'cashouts': sum(cashouts_all),
+            'buyins': sum(buyins_all) / len(buyins_all) if buyins_all else 0,
+            'cashouts': sum(cashouts_all) / len(cashouts_all) if cashouts_all else 0,
             'net_profits': sum(net_profits_all),
         },
         'last_3_months': {
-            'buyins': sum(buyins_3m),
-            'cashouts': sum(cashouts_3m),
+            'buyins': sum(buyins_3m) / len(buyins_3m) if buyins_3m else 0,
+            'cashouts': sum(cashouts_3m) / len(cashouts_3m) if cashouts_3m else 0,
             'net_profits': sum(net_profits_3m),
         },
         'last_month': {
-            'buyins': sum(buyins_1m),
-            'cashouts': sum(cashouts_1m),
+            'buyins': sum(buyins_1m) / len(buyins_1m) if buyins_1m else 0,
+            'cashouts': sum(cashouts_1m) / len(cashouts_1m) if cashouts_1m else 0,
             'net_profits': sum(net_profits_1m),
         },
         'last_week': {
-            'buyins': sum(buyins_1w),
-            'cashouts': sum(cashouts_1w),
+            'buyins': sum(buyins_1w) / len(buyins_1w) if buyins_1w else 0,
+            'cashouts': sum(cashouts_1w) / len(cashouts_1w) if cashouts_1w else 0,
             'net_profits': sum(net_profits_1w),
         }
     }
@@ -518,14 +518,16 @@ def add_game():
 
 # EDIT A POKER GAME
 @app.route('/edit-game', methods=['POST', 'GET'])
-@current_user_only
 def edit_game():
-    pass
+    game_id = request.args.get('game_id')
+    game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).first()
+    currency_list = ['$', '£', '€', '₪', '¥']
+
+    return render_template('edit_game.html', game=game, currency_list=currency_list)
 
 
 # DELETE A POKER GAME
 @app.route('/delete-game', methods=['POST', 'GET'])
-@current_user_only
 def delete_game():
     pass
 
@@ -817,6 +819,86 @@ def paid_results():
                            players=num_players, settlements=settlements,
                            help_needed=help_needed, winnings=session_winnings,
                            cash_game=cash_game)
+
+
+# TRACK LIVE - COUNT
+@app.route('/live-count', methods=['POST', 'GET'])
+@login_required
+def live_count():
+    result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
+    all_games = result.scalars().all()
+    cash_list = [game.cash_name for game in all_games]
+
+    if request.method == 'POST':
+        data = request.form
+        number_of_players = data["number"]
+        if int(number_of_players) > 0:
+            session['num_players'] = int(number_of_players)
+            session['session_game'] = data['selected_game']
+            return redirect(url_for('live_details', players=number_of_players))
+        
+    return render_template('live_count.html', games=cash_list)
+
+
+# TRACK LIVE - DETAILS
+@app.route('/live-details', methods=['POST', 'GET'])
+@login_required
+def live_details():
+    # pull the poker game chosen
+    game_name = session.get('session_game')
+    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
+
+    # if request.method == 'POST':
+
+    #     data = request.form
+    #     num_players = session.get('num_players')
+    #     buy_ins = 0
+    #     cash_outs = 0
+    #     for i in range(num_players):
+    #         buy_ins += int(data[f'buyin_{i}'])
+    #         cash_outs += int(data[f'cashout_{i}']) 
+
+    #     if buy_ins == cash_outs:
+
+    #         player_names = set()
+    #         for i in range(num_players):
+    #             player_name = data[f"player_{i}"]
+            
+    #             if player_name in player_names:
+    #                 flash('Cannot have two players with the same name.')
+    #                 session['form_data'] = data.to_dict()
+    #                 return redirect(url_for('paid_details', players=num_players))
+                
+    #             player_names.add(player_name)
+                    
+                    
+
+    #         # add player names to db
+    #         player_list = cash_game.player_list.copy()
+    #         changed = False
+    #         for i in range(num_players):
+    #             player_name = data[f"player_{i}"].capitalize()
+    #             if player_name not in player_list:
+    #                 player_list.append(player_name)
+    #                 changed = True
+
+    #         if changed:
+    #             cash_game.player_list = player_list
+    #             db.session.commit()
+
+    #         session['form_data'] = data.to_dict()
+    #         session.pop('extra_data', None)
+
+    #         return redirect(url_for('paid_results', players=num_players))
+        
+    #     else:
+    #         flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
+    #         session['form_data'] = data.to_dict()
+    #         return redirect(url_for('paid_details', players=num_players))
+        
+    number_of_players = session.get('num_players')
+
+    return render_template("live_details.html", players=number_of_players, cash_game=cash_game)
 
 
 # SAVE GAME DATA

@@ -91,13 +91,13 @@
   <div class="container col-md-7 my-5">
     <div class="p-4 d-flex align-items-center g-5">
         <!-- Left Column for Image -->
-        <div class="custom-image-col d-none d-md-block">
+        <div class="custom-image-col d-none d-md-block me-4">
           <img src="../static/images/cards4.jpg" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
       </div>
 
       <!-- Right Column for Form -->
-      <div class="custom-form-col">
-          <h2 class="h2-form custom-title mb-2">Registration Form</h2>
+      <div class="custom-form-col ms-4">
+          <h2 class="h2-form custom-title mb-2" style="font-family: 'Montserrat', sans-serif; font-size: 2rem; font-weight: 700;">Registration Form</h2>
           <p class="custom-lead mb-5">Register interest today and be the first to find out when our full version goes live.</p>
           <form
               action="{{ url_for('register') }}"
@@ -105,39 +105,32 @@
               id="earlyReg"
               name="earlyReg"
               class="row g-3"
-              autocomplete="off"
           >
-          {{ form.hidden_tag() }}
+              {{ form.hidden_tag() }}
               <div class="col-12">
-                  <div class="form-floating">
-                      {{ form.name(class="form-control", id="name") }}
-                      {{ form.name.label(for="name") }}
+                  <div>
+                      {{ form.name(class="form-control", id="name", placeholder="Name") }}
                   </div>
               </div>
               <div class="col-12">
-                  <div class="form-floating">
-                      {{ form.email(class="form-control", id="email") }}
-                      {{ form.email.label(for="email") }}
+                  <div>
+                      {{ form.email(class="form-control", id="email", placeholder="Email") }}
                   </div>
               </div>
-              <div class="col-12">
-                  <div class="form-floating">
-                      {{ form.password(class="form-control", id="password") }}
-                      {{ form.password.label(for="password") }}
-                  </div>
-              </div>
-              {% with messages = get_flashed_messages() %}
-                  {% if messages %}
-                      <div class="alert alert-danger col-12" role="alert">
-                      {% for message in messages %}
-                          {{message}}
-                      {% endfor %}
-                      </div>
 
-                  {% endif %}
-              {% endwith %}
               <div class="col-12">
-                  <button class="btn btn-primary col-12" type="submit">Register</button>
+                  {% with messages = get_flashed_messages() %}
+                      {% if messages %}
+                          <div class="alert alert-danger p-2" role="alert">
+                          {% for message in messages %}
+                              {{message}}
+                          {% endfor %}
+                          </div>
+                      {% endif %}
+                  {% endwith %}
+              </div>
+              <div class="col-12">
+                  <button class="btn btn-primary col-12 mb-3 py-2" type="submit">Register</button>
               </div>
           </form>
       </div>

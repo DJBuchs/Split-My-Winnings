@@ -36,10 +36,10 @@
 
                         </div>
                         <div class="col-md-4">
-                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ form_data.get('buyin_' + i|string, '')}}" required step="50">
+                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ form_data.get('buyin_' + i|string, '')}}" required >
                         </div>
                         <div class="col-md-4">
-                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ form_data.get('cashout_' + i|string, '') }}" required step="50">
+                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ form_data.get('cashout_' + i|string, '') }}" required >
                         </div>
                     </div>
                 </div>
@@ -60,6 +60,6 @@
     </div>
 </div>
 
-
+<script src="../static/js/form_handling.js"></script>
 
 {% include "footer.html" %}

@@ -42,3 +42,65 @@
         </div>
     </div>
 </div>
+
+
+
+
+<!-- Final Page -->
+<div class="container col-10 my-5">
+    <div class="col-md-12 mb-3">
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #004080; color: white;">
+                <h5 class="mb-0" style="font-size: 1.4em; font-weight: bold; letter-spacing: 0.05em;">{{ game.cash_name }}</h5>
+                <div>
+                    <a href="{{ url_for('edit_game') }}" class="btn btn-sm btn-light me-2">Edit</a>
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ game.id }}">
+                        Delete
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body py-3">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="fw-bold text-info" style="font-size: 1.4em;">{{ dates | length }}</div>
+                        <small class="text-muted">Total Sessions</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="fw-bold text-success" style="font-size: 1.4em;">{{ game.currency }}{{ "{:,.0f}".format(biggest_win.amount | float ) }} ({{biggest_win.name}})</div>
+                        <small class="text-muted">Biggest Win</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="fw-bold text-danger" style="font-size: 1.4em;">{{ game.currency }}{{ "{:,.0f}".format(biggest_loss.amount | float  | abs  ) }}</div>
+                        <small class="text-muted">Biggest Loss</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="fw-bold text-primary" style="font-size: 1.4em;">{{ game.currency }}{{ "{:,.0f}".format(total_wagered | float ) }}</div>
+                        <small class="text-muted">Total Wagered</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for deleting the game -->
+    <div class="modal fade" id="confirmDeleteModal{{ game.id }}" tabindex="-1" aria-labelledby="exampleModalLabel{{ game.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel{{ game.id }}">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this game?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{{ url_for('delete_game') }}" class="btn btn-danger">Delete</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+</div>

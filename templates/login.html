@@ -1,6 +1,9 @@
 {% from "bootstrap5/form.html" import render_form %}
 {% include "header.html" %}
 
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+
 <body style="background-color: #f8f9fa;">
     <div class="custom-container vertically-center">
         <div class="custom-bg p-4 rounded shadow-sm d-flex align-items-center">
@@ -11,7 +14,7 @@
 
             <!-- Right Column for Form -->
             <div class="custom-form-col">
-                <h2 class="h2-form custom-title mb-2">Login Form</h2>
+                <h2 class="h2-form custom-title mb-4" style="font-family: 'Montserrat', sans-serif; font-size: 2rem; font-weight: 700;">Login Form</h2>
                 <form
                     action="{{ url_for('login') }}"
                     method="post"

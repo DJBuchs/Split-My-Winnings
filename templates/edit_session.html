@@ -50,10 +50,10 @@
 
                     </div>
                     <div class="col-md-4">
-                        <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ '{:.0f}'.format(session.game_data[i]['buyin']) }}" required step="50">
+                        <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ '{:.0f}'.format(session.game_data[i]['buyin']) }}" required >
                     </div>
                     <div class="col-md-4">
-                        <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ '{:.0f}'.format(session.game_data[i]['cashout']) }}" required step="50">
+                        <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ '{:.0f}'.format(session.game_data[i]['cashout']) }}" required >
                     </div>
                 </div>
             </div>

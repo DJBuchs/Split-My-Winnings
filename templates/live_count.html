@@ -1,0 +1,30 @@
+{% include "header.html" %}
+
+
+
+<div class="container col-10 my-5">
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h2 class="mb-4">Enter Details</h2>
+        <form
+        action="{{url_for('live_count')}}"
+        method="post"
+        id="liveCount"
+        name="livePlayers">
+            <div class="mb-3">
+                <input type="number" id="number" name="number" class="form-control" placeholder="Players" required>
+            </div>
+            <div class="mb-3">
+                <select class="form-select placeholder-style" name="selected_game" aria-label="Default select" required>
+                    <option selected disabled value="">Game</option>
+                    <!-- Maybe I can save None and then you can add them to an existing game or to a new game; or New Game -->
+                    {% for game in games %}
+                    <option>{{ game }}</option>
+                    {% endfor %}
+                  </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+    </div>
+</div>
+
+{% include "footer.html" %}
