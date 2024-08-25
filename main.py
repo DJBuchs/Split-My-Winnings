@@ -46,6 +46,27 @@ def current_user_only(f):
     return decorator
 
 
+def game_user_only(f):
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        game_id = request.args.get('game_id')
+        if not game_id:
+            abort(400, description="Game ID is required")
+
+        poker_game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).scalar()
+        if not poker_game:
+            abort(404, description="Poker game not found")
+        
+        elif poker_game.cash_name == "None":
+            abort(403, description="Cannot delete 'None' type games. You are very naughty for trying!")
+
+        if current_user.id != poker_game.user_id:
+            abort(403, description="Access forbidden: You do not own this game")
+
+        return f(*args, **kwargs)
+    return decorator
+
+
 app.config['SEND_EMAIL'] = os.getenv("SEND_EMAIL")
 app.config['EMAIL_PASS'] = os.getenv("EMAIL_PASS")
 app.config['EMAIL_RECEIVE'] = os.getenv("SEND_EMAIL")
@@ -80,7 +101,7 @@ class GameSession(db.Model):
     game_data: Mapped[dict] = mapped_column(JSON)
     date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     # relationship mapping for cash game
-    cash_game_id: Mapped[int] = mapped_column(ForeignKey("poker_game.id"))
+    cash_game_id: Mapped[int] = mapped_column(ForeignKey("poker_game.id", ondelete="CASCADE"))
     cash_game: Mapped["CashGame"] = relationship("CashGame", back_populates="session_data")
 
     def __init__(self, game_data, cash_game):
@@ -95,7 +116,7 @@ class CashGame(db.Model):
     player_list: Mapped[list] = mapped_column(JSON, default=[])
     currency: Mapped[str] = mapped_column(String(10))
     # relationship mapping for game sessions
-    session_data: Mapped[List["GameSession"]] = relationship("GameSession", back_populates="cash_game")
+    session_data: Mapped[List["GameSession"]] = relationship("GameSession", back_populates="cash_game", cascade="all, delete-orphan")
     # relationship mapping for user
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     associated_user: Mapped["User"] = relationship("User", back_populates="associated_games")
@@ -407,88 +428,6 @@ def dash_chart_data():
     return jsonify(results)
 
 
-# VIEW GAME CHART DATA
-@app.route('/view_chart_data')
-def view_chart_data():
-    today = datetime.now()
-    
-    # Fetch games and sessions for the current game
-    game_id = request.args.get('game_id')
-    print(game_id)
-    sessions = db.session.execute(db.select(GameSession).where(GameSession.cash_game_id == game_id)).scalars().all()
-    
-    # Initialize lists to collect data
-    buyins_all = []
-    cashouts_all = []
-    net_profits_all = []
-    buyins_3m = []
-    cashouts_3m = []
-    net_profits_3m = []
-    buyins_1m = []
-    cashouts_1m = []
-    net_profits_1m = []
-    buyins_1w = []
-    cashouts_1w = []
-    net_profits_1w = []
-
-    for session in sessions:
-        for player_data in session.game_data:
-            if player_data['name'] == current_user.name:  # Check if the player is the current user
-                buyin = player_data['buyin']
-                cashout = player_data['cashout']
-                net_profit = cashout - buyin
-                date = session.date
-
-                # All time
-                buyins_all.append(buyin)
-                cashouts_all.append(cashout)
-                net_profits_all.append(net_profit)
-
-                # Last 3 months
-                if date >= today - timedelta(days=90):
-                    buyins_3m.append(buyin)
-                    cashouts_3m.append(cashout)
-                    net_profits_3m.append(net_profit)
-
-                # Last month
-                if date >= today - timedelta(days=30):
-                    buyins_1m.append(buyin)
-                    cashouts_1m.append(cashout)
-                    net_profits_1m.append(net_profit)
-
-                # Last week
-                if date >= today - timedelta(days=7):
-                    buyins_1w.append(buyin)
-                    cashouts_1w.append(cashout)
-                    net_profits_1w.append(net_profit)
-
-    # Aggregate the results
-    results = {
-        'all_time': {
-            'buyins': sum(buyins_all),
-            'cashouts': sum(cashouts_all),
-            'net_profits': sum(net_profits_all),
-        },
-        'last_3_months': {
-            'buyins': sum(buyins_3m),
-            'cashouts': sum(cashouts_3m),
-            'net_profits': sum(net_profits_3m),
-        },
-        'last_month': {
-            'buyins': sum(buyins_1m),
-            'cashouts': sum(cashouts_1m),
-            'net_profits': sum(net_profits_1m),
-        },
-        'last_week': {
-            'buyins': sum(buyins_1w),
-            'cashouts': sum(cashouts_1w),
-            'net_profits': sum(net_profits_1w),
-        }
-    }
-
-    return jsonify(results)
-
-
 # ADD A POKER GAME
 @app.route('/add-game', methods=['POST', 'GET'])
 @login_required
@@ -520,16 +459,34 @@ def add_game():
 @app.route('/edit-game', methods=['POST', 'GET'])
 def edit_game():
     game_id = request.args.get('game_id')
-    game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).first()
+    game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).scalar()
     currency_list = ['$', '£', '€', '₪', '¥']
+
+    if request.method == 'POST':
+        print(game)
+        data = request.form
+        game.cash_name = data['name']
+        game.currency = data['currency']
+        db.session.commit()
+
+        return redirect(url_for('view_game', game_id=game_id))
 
     return render_template('edit_game.html', game=game, currency_list=currency_list)
 
 
 # DELETE A POKER GAME
 @app.route('/delete-game', methods=['POST', 'GET'])
+@game_user_only
 def delete_game():
-    pass
+    game_id = request.args.get('game_id')
+    game_to_delete = db.get_or_404(CashGame, game_id)
+    if current_user.id == game_to_delete.user_id:
+        db.session.delete(game_to_delete)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+    
+    else:
+        return abort(403, description="Access forbidden: You do not own this game")
 
 
 # DELETE A POKER SESSION
@@ -550,6 +507,7 @@ def delete_session():
             return redirect(url_for('view_game', game_id=game_id))
     else:
         return abort(403, description="Access forbidden: You do not own this session")
+    
     return redirect(url_for('dashboard'))
 
 

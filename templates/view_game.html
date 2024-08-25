@@ -40,20 +40,22 @@
 
 
 <!-- TOP BAR -->
-{% if sessions %}
-<div class="container col-10 d-flex align-items-center justify-content-between" style="height: 80px; background-color: #fd7e14; font-size: 2em; font-weight: bold; letter-spacing: 0.05em;">
-    <h2 class="mb-0 text-center w-100" style="color: white;">{{game.cash_name}}</h2>
-    <a href="{{url_for('edit_game', game_id=game.id)}}" >
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" class="bi bi-pencil-square" style="margin-right: 15px;" viewBox="0 0 16 16">
+
+<div class="container col-10 d-flex align-items-center justify-content-between" style="height: 80px; background-color: #fd7e14; font-size: 2em; font-weight: bold; letter-spacing: 0.05em; position: relative;">
+    <h2 class="mb-0 text-center w-100" style="color: white; margin: 0; text-align: center; position: absolute; left: 0; right: 50px;">{{ game.cash_name }}</h2>
+    {% if game.cash_name != "None" %}
+    <a href="{{ url_for('edit_game', game_id=game.id) }}" style="position: absolute; right: 25px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" class="bi bi-pencil-square" viewBox="0 0 16 16">
             <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
             <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
         </svg>
     </a>
+    {% endif %}
 </div>
 
 
 
-
+{% if sessions %}
 <div class="container col-10 my-5">
     <div class="row text-center">
         <div class="col-md-3 border-end">
@@ -226,7 +228,7 @@
                                 </button>
 
                                 <!-- Modal for each session -->
-                                <div class="modal fade" id="confirmDeleteModal{{ sessions[i].id }}" tabindex="-1" aria-labelledby="exampleModalLabel{{ sessions[i].id }}" aria-hidden="true">
+                                <div class="modal fade" id="confirmDeleteModal{{ sessions[i].id }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
@@ -256,8 +258,10 @@
 
 
 {% else %}
-<div class="alert alert-info text-center d-flex align-items-center justify-content-center" role="alert" style="height: 80px;">
-    <h4 class="mb-0">No Data Available For "{{game.cash_name}}"</h4>
+<div class="container col-10 my-3">
+    <div class="alert alert-info text-center d-flex align-items-center justify-content-center p-4 rounded shadow-sm">
+        <h4 class="mb-0">No Data Available</h4>
+    </div>
 </div>
 {% endif %}
         
