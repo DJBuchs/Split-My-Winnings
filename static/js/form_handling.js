@@ -12,19 +12,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to load input data from sessionStorage
     function loadInputData() {
-        document.querySelectorAll('input[type="number"]').forEach(function(input) {
+        // Loop through all input elements
+        document.querySelectorAll('input').forEach(function(input) {
+            // Get the stored value from sessionStorage
             const storedValue = sessionStorage.getItem(input.id);
+            
+            // Check if the stored value exists
             if (storedValue !== null) {
-                input.value = storedValue;
+                // Set the value of the input element based on its type
+                if (input.type === 'number') {
+                    input.value = Number(storedValue); // Convert to number
+                } else {
+                    input.value = storedValue; // For text or other input types
+                }
             }
         });
     }
-
-    // Load existing data
-    loadInputData();
+    
 
     // Add event listener for input changes
     document.body.addEventListener('input', saveInputData);
+    let rowCounter = 0;  // Tracks the current row number
 
     document.querySelectorAll('.add-rebuy-btn').forEach(function(button) {
         button.addEventListener('click', function() {
@@ -36,9 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
             newRebuyInput.type = 'number';
             newRebuyInput.classList.add('form-control', 'me-0');
             newRebuyInput.placeholder = 'Rebuy';
-            newRebuyInput.required = true;
-            newRebuyInput.step = '50';
-            newRebuyInput.id = `rebuy_${Date.now()}`; // Assign a unique ID
+            
+            // Use a combination of rowCounter and itemCounter for unique IDs
+            const itemCounter = parent.querySelectorAll('input').length + 1; // Number of items in the current row
+            newRebuyInput.id = `rebuy_${rowCounter}_${itemCounter}`;
 
             newRebuyDiv.appendChild(newRebuyInput);
 
@@ -58,5 +67,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Save the new empty input to sessionStorage
             sessionStorage.setItem(newRebuyInput.id, '');
         });
+
+        rowCounter++;
     });
+
+    // Load existing data
+    loadInputData();
+
 });

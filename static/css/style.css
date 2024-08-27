@@ -64,7 +64,6 @@
 .custom-container {
     max-width: 900px; /* Maximum width of the container */
     margin: auto; /* Center the container */
-
 }
 
 .custom-bg {
@@ -209,3 +208,12 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
     padding: 30px; /* Padding around the chart */
 }
+
+.winbig {
+    margin-top: 12px;
+}
+
+.winsmall {
+    margin-top: 10px
+}
+

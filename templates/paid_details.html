@@ -27,7 +27,7 @@
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
                             
-                                <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" list="playerOptions" value="{{ form_data.get('player_' + i|string, '') }}" placeholder="Name" required autocomplete="off">
+                                <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" list="playerOptions" placeholder="Name" required autocomplete="off" maxlength="15">
                                 <datalist id="playerOptions">
                                     {% for player in cash_game.player_list %}
                                         <option value="{{ player }}">
@@ -36,10 +36,10 @@
 
                         </div>
                         <div class="col-md-4">
-                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ form_data.get('buyin_' + i|string, '')}}" required >
+                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" required >
                         </div>
                         <div class="col-md-4">
-                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ form_data.get('cashout_' + i|string, '') }}" required >
+                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" required >
                         </div>
                     </div>
                 </div>
@@ -55,11 +55,16 @@
                 {% endif %}
             {% endwith %}
             <button class="btn btn-primary" type="submit">Calculate</button>
-            <a href="{{url_for('paid_clear')}}" class="btn btn-danger ms-1">Clear</a>
+            <a href="{{url_for('paid_clear')}}" onclick="clearSessionStorage()" class="btn btn-danger ms-1">Clear</a>
         </form>
     </div>
 </div>
 
 <script src="../static/js/form_handling.js"></script>
+<script>
+    function clearSessionStorage() {
+        sessionStorage.clear(); // Clears all session storage
+    }
+</script>
 
 {% include "footer.html" %}

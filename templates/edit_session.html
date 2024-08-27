@@ -69,7 +69,7 @@
             {% endif %}
         {% endwith %}
             <div class="d-flex justify-content-between">
-                <button class="btn btn-danger" type="submit">Save Changes</button>
+                <button class="btn btn-primary" type="submit">Save Changes</button>
                 {% if view_game %}
                 <a href="{{url_for('view_game', game_id=poker_game.id)}}" class="btn btn-secondary">Cancel</a>
                 {% else %}
@@ -79,6 +79,5 @@
         </form>
     </div>
 </div>
-
 
 {% include "footer.html" %}

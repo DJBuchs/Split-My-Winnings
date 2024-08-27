@@ -16,7 +16,7 @@ import bleach
 import secrets
 from forms import RegisterForm, LoginForm
 from datetime import datetime, timedelta
-
+import random
 
 load_dotenv()
 
@@ -24,6 +24,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("FLASK_KEY")
 Bootstrap5(app)
 
+COLOR_LIST = ['#fd7e14', '#8e44ad', '#3498db', '#27ae60']
+HOVER_LIST = ['#e06e14', '#7d3a9b', '#2e88c8', '#239a56']
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -60,7 +62,7 @@ def game_user_only(f):
         elif poker_game.cash_name == "None":
             abort(403, description="Cannot delete 'None' type games. You are very naughty for trying!")
 
-        if current_user.id != poker_game.user_id:
+        elif current_user.id != poker_game.user_id:
             abort(403, description="Access forbidden: You do not own this game")
 
         return f(*args, **kwargs)
@@ -89,8 +91,8 @@ class User(db.Model, UserMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(100), unique=True)
-    password: Mapped[str] = mapped_column(String(100))
-    name: Mapped[str] = mapped_column(String(1000))
+    password: Mapped[str] = mapped_column(String(30))
+    name: Mapped[str] = mapped_column(String(18))
     # relationship mapping for cash game
     associated_games: Mapped[List["CashGame"]] = relationship("CashGame", back_populates="associated_user")
     
@@ -112,9 +114,11 @@ class GameSession(db.Model):
 class CashGame(db.Model):
     __tablename__ = "poker_game"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    cash_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    cash_name: Mapped[str] = mapped_column(String(20), nullable=False)
     player_list: Mapped[list] = mapped_column(JSON, default=[])
     currency: Mapped[str] = mapped_column(String(10))
+    color: Mapped[str] = mapped_column(String(10))
+    hover: Mapped[str] = mapped_column(String(10))
     # relationship mapping for game sessions
     session_data: Mapped[List["GameSession"]] = relationship("GameSession", back_populates="cash_game", cascade="all, delete-orphan")
     # relationship mapping for user
@@ -171,7 +175,7 @@ def register_success():
     return render_template("register_success.html")
 
 
-# REGISTER INTEREST
+# REGISTER
 @app.route('/register', methods=['POST', 'GET'])
 def register():
     if current_user.is_authenticated:
@@ -197,7 +201,9 @@ def register():
                 cash_name="None",
                 player_list=[current_user.name],
                 currency="$",
-                associated_user=current_user
+                associated_user=current_user,
+                color="#6c757d",
+                hover="#5f676f",
             )
             db.session.add(new_poker_game)
             db.session.commit()
@@ -241,6 +247,8 @@ def dashboard():
         'amount_won': amount_won,
         'currency': game.currency,
         'id': game.id,
+        'color': game.color,
+        'hover': game.hover
         })
 
     # 3 most recent games
@@ -250,6 +258,7 @@ def dashboard():
     buyins = [sum(data['buyin'] for data in game) for game in game_data]
     owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
     game_names = [game.cash_game.cash_name for game in games]
+    game_color = [game.cash_game.color for game in games]
     session_id = [game.id for game in games]
     currency = [game.cash_game.currency for game in games]
 
@@ -258,7 +267,7 @@ def dashboard():
     return render_template("dashboard.html", game_data=game_data, buyins=buyins, date=formatted_dates,
                            owner_data=owner_data, game_name = game_names,
                            games=games_list, min_length=min_length,
-                           session_id=session_id, currency=currency)
+                           session_id=session_id, currency=currency, game_color=game_color)
 
 
 # VIEW POKER GAME
@@ -436,11 +445,14 @@ def add_game():
         data = request.form
         game_name = data['name']
         currency = data['currency']
+        index = random.randint(0, len(COLOR_LIST) - 1)
         new_poker_game = CashGame(
             cash_name=game_name,
             player_list=[current_user.name],
             currency=currency,
-            associated_user=current_user
+            associated_user=current_user,
+            color=COLOR_LIST[index],
+            hover=HOVER_LIST[index],
         )
         db.session.add(new_poker_game)
         try:
@@ -467,9 +479,16 @@ def edit_game():
         data = request.form
         game.cash_name = data['name']
         game.currency = data['currency']
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("A game with this name already exists. Please choose a different name.")
+            return redirect(url_for('edit_game', game_id=game_id))
+        else:
+            return redirect(url_for('view_game', game_id=game_id))
 
-        return redirect(url_for('view_game', game_id=game_id))
+        
 
     return render_template('edit_game.html', game=game, currency_list=currency_list)
 

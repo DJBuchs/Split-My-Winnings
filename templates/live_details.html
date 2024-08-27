@@ -38,7 +38,7 @@
                         <!-- Rebuys -->
                         <div class="col-md-3 d-flex flex-column align-items-start">
                             <div class="d-flex align-items-center">
-                                <input type="number" id="rebuy_{{ i }}" name="rebuy_{{ i }}" class="form-control me-2" placeholder="Rebuy" required >
+                                <input type="number" id="rebuy_{{ i }}" name="rebuy_{{ i }}" class="form-control me-2" placeholder="Rebuy">
                                 <div class="text-dark ms-2 mb-1 add-rebuy-btn">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
                                         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
@@ -70,14 +70,23 @@
             {% endwith %}
             
             <!-- Submit and Add Player Buttons -->
-            <div class="d-flex">
-                <button class="btn btn-primary me-2" type="submit">Calculate</button>
-                <a href="#" class="btn btn-secondary">Add Player</a>
+            
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button class="btn btn-primary me-1" type="submit">Calculate</button>
+                    <a href="#" class="btn btn-secondary">Add Player</a>
+                </div>
+                <a href="{{ url_for('live_details') }}" class="btn btn-danger" onclick="clearSessionStorage()">Clear</a>
             </div>
         </form>
     </div>
 </div>
 
 <script src="../static/js/form_handling.js"></script>
+<script>
+    function clearSessionStorage() {
+        sessionStorage.clear(); // Clears all session storage
+    }
+</script>
 
 {% include "footer.html" %}

@@ -26,13 +26,13 @@
                 <div class="mb-4">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
-                            <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" value="{{ form_data.get('player_' + i|string, '') }}" placeholder="Name" required>
+                            <input type="text" id="player_{{ i }}" name="player_{{ i }}" class="form-control" placeholder="Name" required maxlength="15">
                         </div>
                         <div class="col-md-4">
-                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" value="{{ form_data.get('buyin_' + i|string, '')}}" required >
+                            <input type="number" id="buyin_{{ i }}" name="buyin_{{ i }}" class="form-control" placeholder="Buy-in" required >
                         </div>
                         <div class="col-md-4">
-                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" value="{{ form_data.get('cashout_' + i|string, '') }}" required >
+                            <input type="number" id="cashout_{{ i }}" name="cashout_{{ i }}" class="form-control" placeholder="Cash-out" required >
                         </div>
                     </div>
                 </div>
@@ -48,11 +48,17 @@
                 {% endif %}
             {% endwith %}
             <button class="btn btn-primary" type="submit">Calculate</button>
-            <a href="{{url_for('clear_table')}}" class="btn btn-danger ms-1">Clear</a>
+            <a href="{{url_for('clear_table')}}" onclick="clearSessionStorage()" class="btn btn-danger ms-1">Clear</a>
         </form>
     </div>
 </div>
 
+<script src="../static/js/form_handling.js"></script>
+<script>
+    function clearSessionStorage() {
+        sessionStorage.clear(); // Clears all session storage
+    }
+</script>
 
 
 {% include "footer.html" %}

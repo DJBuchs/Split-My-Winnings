@@ -31,10 +31,14 @@
             <div class="col-md-4">
                 <div class="card custom-card shadow-sm" style="height: {{ (players + 1) * 41 }}px;">
                     <div class="card-body">
-                        <h4 class="card-title text-center fw-bold mb-3">Winnings</h4>
+                        <h4 class="card-title text-center fw-bold">Winnings</h4>
                         <p class="card-text text-center">
                             {% for i in range(players) %}
-                            <div class="m-2 text-center">
+                            {% if players > 7 %}
+                            <div class="winbig text-center">
+                            {% else %}
+                            <div class="winsmall text-center">
+                            {% endif %}
                                 {% if winnings[i] > 0 %}
                                     <strong style="color: #009C4C;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Won {{ "{:,.0f}".format(winnings[i]|abs) }} chips<br>
                                 {% elif winnings[i] < 0 %}
