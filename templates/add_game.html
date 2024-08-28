@@ -8,6 +8,7 @@
         method="post"
         id="newGame"
         name="newGame">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
                 <input type="text" id="name" name="name" class="form-control" placeholder="Name" required autocomplete="off" maxlength="20">
             </div>

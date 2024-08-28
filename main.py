@@ -18,11 +18,13 @@ from forms import RegisterForm, LoginForm
 from datetime import datetime, timedelta
 import random
 from twilio.rest import Client
+from flask_wtf.csrf import CSRFProtect
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("FLASK_KEY")
+csrf = CSRFProtect(app)
 Bootstrap5(app)
 
 COLOR_LIST = ['#fd7e14', '#8e44ad', '#3498db', '#27ae60']
@@ -295,6 +297,11 @@ def view_game():
     min_length = len(paginated_sessions)
     total_pages = (total_sessions + per_page - 1) // per_page  # ceil division
 
+    # extra data to combat pagination
+    number_of_sessions = len(sessions)
+    all_game_data = [session.game_data for session in sessions]
+    all_buyins = [sum(data['buyin'] for data in game) for game in all_game_data]
+
     # data for game history
     game_data = [session.game_data for session in paginated_sessions]
     buyins = [sum(data['buyin'] for data in game) for game in game_data]
@@ -359,7 +366,7 @@ def view_game():
             if net < biggest_loss['amount']:
                 biggest_loss = {'amount': net, 'name': p_name}
     
-    total_wagered = sum(buyins)
+    total_wagered = sum(all_buyins)
 
     return render_template("view_game.html", game=cash_game, dates=formatted_dates, buyins=buyins,
                             owner_data=owner_data, stats=player_stats_sorted, total_wagered=total_wagered,
@@ -367,7 +374,7 @@ def view_game():
                             sessions=paginated_sessions, 
                            min_length=min_length, 
                            total_pages=total_pages, 
-                           current_page=page)
+                           current_page=page, number_of_sessions=number_of_sessions)
 
 
 # DASHBOARD CHART DATA

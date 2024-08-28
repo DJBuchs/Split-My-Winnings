@@ -5,49 +5,47 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
 
 <body style="background-color: #f8f9fa;">
-    <div class="custom-container vertically-center">
-        <div class="custom-bg p-4 rounded shadow-sm d-flex align-items-center">
+    <div class="custom-container vertically-center" style="width: 1000px;">
+        <div class="custom-bg px-5 py-4 rounded shadow-sm d-flex align-items-center">
             <!-- Left Column for Image -->
-            <div class="custom-image-col d-none d-md-block">
-                <img src="../static/images/cards4.jpg" alt="Registration Image" width="300px" class="custom-image img-fluid rounded">
+            <div class="custom-image-col d-none d-md-block me-4">
+                <img src="../static/images/eyestetix-studio--kTQitsL0Is-unsplash.jpg" alt="Registration Image" width="375px" class="custom-image img-fluid rounded">
             </div>
 
             <!-- Right Column for Form -->
-            <div class="custom-form-col">
+            <div class="custom-form-col ms-4">
                 <h2 class="h2-form custom-title mb-4" style="font-family: 'Montserrat', sans-serif; font-size: 2rem; font-weight: 700;">Login Form</h2>
                 <form
                     action="{{ url_for('login') }}"
                     method="post"
                     id="login"
                     name="login"
-                    class="row g-3"
+                    class="row g-2"
                 >
                     {{ form.hidden_tag() }}
                     <div class="col-12">
-                        <div class="form-floating"> 
-                            {{ form.email(class="form-control", id="email") }}
-                            {{ form.email.label(for="email") }}
+                        <div>
+                            {{ form.email(class="form-control", id="email", placeholder="Email", style="height: 50px;") }}
                         </div>
                     </div>
                     <div class="col-12">
-                        <div class="form-floating">
-                            {{ form.password(class="form-control", id="password") }}
-                            {{ form.password.label(for="password") }}
+                        <div>
+                            {{ form.password(class="form-control", id="email", placeholder="Email", style="height: 50px;") }}
                         </div>
                     </div>
                     <div class="col-12">
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            <div class="alert alert-danger p-2 mt-0 text-center" role="alert">
-                            {% for message in messages %}
-                                {{message}}
-                            {% endfor %}
-                            </div>
-                        {% endif %}
-                    {% endwith %}
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                <div class="alert alert-danger p-2 mt-0 text-center" role="alert">
+                                {% for message in messages %}
+                                    {{message}}
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
                     </div>
                     <div class="col-12">
-                        {{ form.submit(class="btn btn-primary") }}
+                        {{ form.submit(class="btn btn-primary col-12 mb-3 py-2", style="font-size: 1.1rem;") }}
                     </div>
                 </form>
             </div>

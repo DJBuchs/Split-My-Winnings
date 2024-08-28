@@ -8,6 +8,7 @@
         method="post"
         id="editGame"
         name="editGame">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
                 <input type="text" id="name" name="name" class="form-control" placeholder="Game Name" value="{{game.cash_name}}" required autocomplete="off" maxlength="20">
             </div>

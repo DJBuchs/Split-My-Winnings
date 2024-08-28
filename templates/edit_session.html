@@ -9,6 +9,7 @@
         {% else %}
         <form action="{{ url_for('edit_session', session=session.id) }}" method="post">
         {% endif %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- Dropdown for selecting or changing the game name -->
             <div class="row mb-4 align-items-center">
