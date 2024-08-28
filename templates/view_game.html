@@ -178,10 +178,12 @@
 
 <!-- all history -->
 
+
 <div class="container col-10 my-5">
-<div class="p-4 mt-3">
+    <div class="p-4 mt-3">
         <h2 class="mb-4">Session History</h2>
-        {% for i in range(sessions | length) %}
+    <div id="paginated-content" class="session-list">
+        {% for i in range(min_length) %}
         <div class="col-md-12 mb-3">
             <div class="card border-0 shadow-sm">
 
@@ -251,13 +253,29 @@
             </div>
         </div>
         {% endfor %}
-
-        <div class="text-end mt-3">
-            <button id="prev" class="btn btn-secondary">Previous</button>
-            <button id="next" class="btn btn-secondary">Next</button>
-        </div>
-
     </div>
+
+
+<nav aria-label="session history">
+    <ul class="pagination justify-content-end">
+        <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('view_game', game_id=game.id, page=(current_page - 1)) }}" data-page="{{ current_page - 1 }}" aria-label="Previous">
+                <span aria-hidden="true">«</span>
+            </a>
+        </li>
+        {% for i in range(1, total_pages + 1) %}
+        <li class="page-item {% if i == current_page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('view_game', game_id=game.id, page=i) }}" data-page="{{ i }}">{{ i }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('view_game', game_id=game.id, page=(current_page + 1)) }}" data-page="{{ current_page + 1 }}" aria-label="Next">
+                <span aria-hidden="true">»</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
 </div>
 
 
@@ -271,5 +289,7 @@
 </div>
 {% endif %}
         
+<script src="../static/js/view-game.js"></script>
 
 {% include "footer.html" %}
+

@@ -26,7 +26,6 @@
               <li><a href="{{url_for('home')}}" class="nav-link px-2 text-secondary">Home</a></li>
               {% if current_user.is_authenticated %}
                 <li><a href="{{url_for('player_count')}}" class="nav-link px-2 text-white">Settle Game</a></li>
-                <li><a href="{{url_for('live_count')}}" class="nav-link px-2 text-white">Track Live</a></li>
               {% else %}
                 <li><a href="{{url_for('free_player_count')}}" class="nav-link px-2 text-white">Split-Free</a></li>
               {% endif %}

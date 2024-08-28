@@ -4,7 +4,7 @@ from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime, func, UniqueConstraint
+from sqlalchemy import Integer, String, Text, ForeignKey, JSON, DateTime, func, UniqueConstraint, desc
 from sqlalchemy.exc import IntegrityError
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,6 +17,7 @@ import secrets
 from forms import RegisterForm, LoginForm
 from datetime import datetime, timedelta
 import random
+from twilio.rest import Client
 
 load_dotenv()
 
@@ -72,6 +73,8 @@ def game_user_only(f):
 app.config['SEND_EMAIL'] = os.getenv("SEND_EMAIL")
 app.config['EMAIL_PASS'] = os.getenv("EMAIL_PASS")
 app.config['EMAIL_RECEIVE'] = os.getenv("SEND_EMAIL")
+app.config['TWILIO_ACC_SID'] = os.getenv("TWILIO_ACC_SID")
+app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN")
 app.config['SESSION_COOKIE_SECURE'] = True
 
 
@@ -276,14 +279,27 @@ def view_game():
     # game and sessions for chosen game
     game_id = request.args.get('game_id')
     cash_game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).scalars().first()
-    sessions = db.session.execute(db.select(GameSession).where(GameSession.cash_game_id == game_id)).scalars().all()
-    sessions.reverse()
+    
+    sessions = db.session.execute(
+        db.select(GameSession)
+        .where(GameSession.cash_game_id == game_id)
+        .order_by(desc(GameSession.id))  # Order by id in descending order
+    ).scalars().all()
+
+    # pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = 4
+    total_sessions = min(40, len(sessions))
+    paginated_sessions = sessions[(page-1)*per_page : page*per_page]
+    
+    min_length = len(paginated_sessions)
+    total_pages = (total_sessions + per_page - 1) // per_page  # ceil division
 
     # data for game history
-    game_data = [session.game_data for session in sessions]
+    game_data = [session.game_data for session in paginated_sessions]
     buyins = [sum(data['buyin'] for data in game) for game in game_data]
     owner_data = [next((data['cashout'] - data['buyin'] for data in game if data['name'] == current_user.name), None) for game in game_data]
-    formatted_dates = [session.date.strftime(f"%A %d{get_ordinal_suffix(session.date.day)} %B") for session in sessions]
+    formatted_dates = [session.date.strftime(f"%A %d{get_ordinal_suffix(session.date.day)} %B") for session in  paginated_sessions]
 
     # Calculate player statistics
     player_stats = []
@@ -342,15 +358,16 @@ def view_game():
 
             if net < biggest_loss['amount']:
                 biggest_loss = {'amount': net, 'name': p_name}
-
-
-
     
     total_wagered = sum(buyins)
 
-    return render_template("view_game.html", game=cash_game, sessions=sessions, dates=formatted_dates, buyins=buyins,
+    return render_template("view_game.html", game=cash_game, dates=formatted_dates, buyins=buyins,
                             owner_data=owner_data, stats=player_stats_sorted, total_wagered=total_wagered,
-                            biggest_loss=biggest_loss, biggest_win=biggest_win)
+                            biggest_loss=biggest_loss, biggest_win=biggest_win,
+                            sessions=paginated_sessions, 
+                           min_length=min_length, 
+                           total_pages=total_pages, 
+                           current_page=page)
 
 
 # DASHBOARD CHART DATA
@@ -445,7 +462,8 @@ def add_game():
         data = request.form
         game_name = data['name']
         currency = data['currency']
-        index = random.randint(0, len(COLOR_LIST) - 1)
+        my_games = db.session.query(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id).all()
+        index = get_unique_color(COLOR_LIST, my_games)
         new_poker_game = CashGame(
             cash_name=game_name,
             player_list=[current_user.name],
@@ -583,7 +601,7 @@ def edit_session():
             player_list = cash_game.player_list.copy()
             changed = False
             for i in range(num_players):
-                player_name = data[f"player_{i}"].capitalize()
+                player_name = data[f"player_{i}"].title()
                 if player_name not in player_list:
                     player_list.append(player_name)
                     changed = True
@@ -596,7 +614,7 @@ def edit_session():
             updated_game_data = []
             for i in range(num_players):
                 player = {
-                    'name': data[f'player_{i}'].capitalize(),
+                    'name': data[f'player_{i}'].title(),
                     'buyin': float(data[f'buyin_{i}']),
                     'cashout': float(data[f'cashout_{i}'])
                 }
@@ -621,6 +639,8 @@ def edit_session():
 
 
 # CONTACT US
+app.config['TWILIO_ACC_SID'] = os.getenv("TWILIO_ACC_SID")
+app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN")
 @app.route('/contact-us', methods=['POST', 'GET'])
 def contact_form():
     if request.method == 'POST':
@@ -629,15 +649,13 @@ def contact_form():
         name_entered = form_data['name']
         message = form_data['message']
         try:
-            with smtplib.SMTP("smtp.gmail.com") as connection:
-                connection.starttls()
-                connection.login(user=app.config['SEND_EMAIL'], password=app.config['EMAIL_PASS'])
-                connection.sendmail(
-                    from_addr=app.config['SEND_EMAIL'], 
-                    to_addrs=app.config['EMAIL_RECEIVE'],
-                    msg=f"Subject: New Contact Form Message\n\n{name_entered} has sent a message!\nEmail: {email_entered}\n"
-                            f"Message: {message}"
-                    )
+            client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
+            message = client.messages.create(
+            from_='+15018081850',
+            body=f"New Contact Form Message\n\n{name_entered} has sent a message!\nEmail: {email_entered}\n"
+                            f"Message: {message}",
+            to='+972587534279'
+            )
         except Exception as e:
             return f"An error occurred: {e}", 500
 
@@ -651,14 +669,13 @@ def contact_footer():
         form_data = request.form
         message = form_data['message']
         try:
-            with smtplib.SMTP("smtp.gmail.com") as connection:
-                connection.starttls()
-                connection.login(user=app.config['SEND_EMAIL'], password=app.config['EMAIL_PASS'])
-                connection.sendmail(
-                    from_addr=app.config['SEND_EMAIL'], 
-                    to_addrs=app.config['EMAIL_RECEIVE'], 
-                    msg=f"Subject: New Poker Message\n\nYou were sent the following message:\n{message}"
-                )
+            client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
+            message = client.messages.create(
+            from_='+15018081850',
+            body= f"New Poker Message:\n"
+            f"{message}",
+            to='+972587534279'
+            )
         except Exception as e:
             return f"An error occurred: {e}", 500
             
@@ -720,7 +737,7 @@ def paid_details():
             player_list = cash_game.player_list.copy()
             changed = False
             for i in range(num_players):
-                player_name = data[f"player_{i}"].capitalize()
+                player_name = data[f"player_{i}"].title()
                 if player_name not in player_list:
                     player_list.append(player_name)
                     changed = True
@@ -769,7 +786,7 @@ def paid_results():
     players = []
     for i in range(num_players):
         player = {
-            'name': form_data[f'player_{i}'].capitalize(),
+            'name': form_data[f'player_{i}'].title(),
             'buyin': float(form_data[f'buyin_{i}']),
             'cashout': float(form_data[f'cashout_{i}'])
         }
@@ -799,31 +816,31 @@ def paid_results():
 
 
 # TRACK LIVE - COUNT
-@app.route('/live-count', methods=['POST', 'GET'])
-@login_required
-def live_count():
-    result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
-    all_games = result.scalars().all()
-    cash_list = [game.cash_name for game in all_games]
+# @app.route('/live-count', methods=['POST', 'GET'])
+# @login_required
+# def live_count():
+#     result = db.session.execute(db.select(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id))
+#     all_games = result.scalars().all()
+#     cash_list = [game.cash_name for game in all_games]
 
-    if request.method == 'POST':
-        data = request.form
-        number_of_players = data["number"]
-        if int(number_of_players) > 0:
-            session['num_players'] = int(number_of_players)
-            session['session_game'] = data['selected_game']
-            return redirect(url_for('live_details', players=number_of_players))
+#     if request.method == 'POST':
+#         data = request.form
+#         number_of_players = data["number"]
+#         if int(number_of_players) > 0:
+#             session['num_players'] = int(number_of_players)
+#             session['session_game'] = data['selected_game']
+#             return redirect(url_for('live_details', players=number_of_players))
         
-    return render_template('live_count.html', games=cash_list)
+#     return render_template('live_count.html', games=cash_list)
 
 
 # TRACK LIVE - DETAILS
-@app.route('/live-details', methods=['POST', 'GET'])
-@login_required
-def live_details():
-    # pull the poker game chosen
-    game_name = session.get('session_game')
-    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
+# @app.route('/live-details', methods=['POST', 'GET'])
+# @login_required
+# def live_details():
+#     # pull the poker game chosen
+#     game_name = session.get('session_game')
+#     cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
 
     # if request.method == 'POST':
 
@@ -854,7 +871,7 @@ def live_details():
     #         player_list = cash_game.player_list.copy()
     #         changed = False
     #         for i in range(num_players):
-    #             player_name = data[f"player_{i}"].capitalize()
+    #             player_name = data[f"player_{i}"].title()
     #             if player_name not in player_list:
     #                 player_list.append(player_name)
     #                 changed = True
@@ -873,9 +890,9 @@ def live_details():
     #         session['form_data'] = data.to_dict()
     #         return redirect(url_for('paid_details', players=num_players))
         
-    number_of_players = session.get('num_players')
+    # number_of_players = session.get('num_players')
 
-    return render_template("live_details.html", players=number_of_players, cash_game=cash_game)
+    # return render_template("live_details.html", players=number_of_players, cash_game=cash_game)
 
 
 # SAVE GAME DATA
@@ -887,7 +904,7 @@ def save_data():
     game_data = []
     for i in range(num_players):
         player = {
-            'name': form_data[f'player_{i}'].capitalize(),
+            'name': form_data[f'player_{i}'].title(),
             'buyin': float(form_data[f'buyin_{i}']),
             'cashout': float(form_data[f'cashout_{i}'])
         }
@@ -980,7 +997,7 @@ def free_results():
     players = []
     for i in range(num_players):
         player = {
-            'name': form_data[f'player_{i}'].capitalize(),
+            'name': form_data[f'player_{i}'].title(),
             'buyin': float(form_data[f'buyin_{i}']),
             'cashout': float(form_data[f'cashout_{i}'])
         }
@@ -1035,8 +1052,8 @@ def calculate_settlements(players):
 
 def update_cashout(players, extra_data):
     for session in extra_data:
-        payer = session['payer'].capitalize()
-        payee = session['payee'].capitalize()
+        payer = session['payer'].title()
+        payee = session['payee'].title()
         amount = float(session['amount'])
 
         for player in players:
@@ -1065,6 +1082,18 @@ def get_recent_games(limit=3):
         .all()
     )
     return result
+
+
+def get_unique_color(COLOR, my_games):
+    # Get the last two games
+    last_two_colors = [game.color for game in my_games[-2:]]
+
+    # Loop until a unique color is found
+    while True:
+        index = random.randint(0, len(COLOR_LIST) - 1)
+        color = COLOR_LIST[index]
+        if color not in last_two_colors:
+            return index
 
 
 if __name__ == "__main__":
