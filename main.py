@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import random
 from twilio.rest import Client
 from flask_wtf.csrf import CSRFProtect
+import requests
 
 load_dotenv()
 
@@ -76,6 +77,13 @@ app.config['EMAIL_RECEIVE'] = os.getenv("SEND_EMAIL")
 app.config['TWILIO_ACC_SID'] = os.getenv("TWILIO_ACC_SID")
 app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN")
 app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+SHEETY_USER = os.getenv('SHEETY_USER_NAME')
+SHEETY_PASS = os.getenv('SHEETY_PASS_CODE')
+SHEETY_AUTH = os.getenv('SHEETY_AUTH_VALUE')
+SHEETY_ENDPOINT_FOOTER = os.getenv('SHEETY_ENDPOINT_FOOTER')
+SHEETY_ENDPOINT_CONTACT = os.getenv('SHEETY_ENDPOINT_CONTACT')
 
 
 @login_manager.user_loader
@@ -665,8 +673,6 @@ def edit_session():
 
 
 # CONTACT US
-app.config['TWILIO_ACC_SID'] = os.getenv("TWILIO_ACC_SID")
-app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN")
 @app.route('/contact-us', methods=['POST', 'GET'])
 def contact_form():
     if request.method == 'POST':
@@ -674,18 +680,35 @@ def contact_form():
         email_entered = escape(form_data.get('email', '').strip())
         name_entered = escape(form_data.get('name', '').strip())
         message = escape(form_data.get('message', '').strip())
-
+        headers = {
+            "authorization": SHEETY_AUTH
+        }
+        params = {
+            "contactUs": {
+                "name": name_entered,
+                "email": email_entered,
+                "message": message
+            }
+        }
         try:
-            client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
-            message = client.messages.create(
-            from_='+15018081850',
-            body=f"New Contact Form Message\n\n{name_entered} has sent a message!\nEmail: {email_entered}\n"
-                            f"Message: {message}",
-            to='+972587534279'
-            )
-        except Exception as e:
-            return f"An error occurred: {e}", 500
+            response = requests.post(url=SHEETY_ENDPOINT_CONTACT, headers=headers, json=params)
+            response.raise_for_status()
 
+        except requests.exceptions.HTTPError as http_err:
+            if http_err.response.status_code == 402:
+                client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
+                message = client.messages.create(
+                from_='+15018081850',
+                body=f"New Contact Form Message\n\n{name_entered} has sent a message!\nEmail: {email_entered}\n"
+                                f"Message: {message}",
+                to='+972587534279'
+                )
+                return jsonify(error="Sorry, we aren't accepting any more messages at the moment."), 402
+            else:
+                return jsonify(error="An unexpected error occurred."), 500
+        else:
+            return render_template("thank_you.html")
+            
     return render_template("contact_form.html")
 
 
@@ -695,18 +718,32 @@ def contact_footer():
     if request.method == 'POST':
         form_data = request.form
         message = escape(form_data.get('message', '').strip())
+        headers = {
+            "authorization": SHEETY_AUTH
+        }
+        params = {
+            "footer": {
+                "message": message
+            }
+        }
         try:
-            client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
-            message = client.messages.create(
-            from_='+15018081850',
-            body= f"New Poker Message:\n"
-            f"{message}",
-            to='+972587534279'
-            )
-        except Exception as e:
-            return f"An error occurred: {e}", 500
-            
-        return redirect(request.referrer or url_for('home'))
+            response = requests.post(url=SHEETY_ENDPOINT_FOOTER, headers=headers, json=params)
+            response.raise_for_status()
+
+        except requests.exceptions.HTTPError as http_err:
+            if http_err.response.status_code == 402:
+                client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
+                message = client.messages.create(
+                from_='+15018081850',
+                body= f"New Poker Message:\n"
+                f"{message}",
+                to='+972587534279'
+                )
+                return jsonify(error="Sorry, we aren't accepting any more messages at the moment."), 402
+            else:
+                return jsonify(error="An unexpected error occurred."), 500
+        else:
+            return render_template("thank_you.html")
 
 
 # PAID VERSION - NUMBER OF PLAYERS + GAME
