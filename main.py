@@ -139,8 +139,8 @@ class CashGame(db.Model):
     __table_args__ = (UniqueConstraint('user_id', 'cash_name', name='uix_user_cash_name'),)
 
     
-# with app.app_context():
-#     db.create_all()
+with app.app_context():
+    db.create_all()
 
 
 @app.route('/logout')
