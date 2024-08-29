@@ -14,3 +14,4 @@ gunicorn==21.2.0
 email_validator==2.2.0
 pandas==2.2.2
 twilio==9.2.4
+psycopg2-binary==2.9.9

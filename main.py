@@ -93,7 +93,7 @@ def load_user(user_id):
 
 class Base(DeclarativeBase):
     pass
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/danibuchsbaum/Split_My_Winnings/instance/poker_database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_URI", 'sqlite:////Users/danibuchsbaum/Split_My_Winnings/instance/poker_database.db')
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
