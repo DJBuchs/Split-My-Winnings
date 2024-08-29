@@ -19,8 +19,8 @@
                         {% for i in range(players) %}
                         <tr>
                             <td class="bg-light">{{ form_data.get('player_' ~ i|string, '').capitalize() }}</td>
-                            <td class="text-end">{{ form_data.get('buyin_' ~ i|string, '') }}</td>
-                            <td class="text-end">{{ form_data.get('cashout_' ~ i|string, '') }}</td>
+                            <td class="text-end">{{ form_data.get('buyin_' ~ i|string, 0)|float|int }}</td>
+                            <td class="text-end">{{ form_data.get('cashout_' ~ i|string, 0)|float|int }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -105,6 +105,7 @@
         method="post"
         id="extraData"
         name="extraData">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-3">
                 <div class="col-md-4">
                     <select class="form-select placeholder-style" name="payer" aria-label="Default select" required>

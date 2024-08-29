@@ -11,9 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from typing import List
 import os
 from dotenv import load_dotenv
-import smtplib
-import bleach
-import secrets
+from markupsafe import escape
 from forms import RegisterForm, LoginForm
 from datetime import datetime, timedelta
 import random
@@ -279,7 +277,9 @@ def dashboard():
 @app.route('/view-game')
 def view_game():
     # game and sessions for chosen game
-    game_id = request.args.get('game_id')
+    game_id = request.args.get('game_id', type=int)
+    if game_id is None or game_id <= 0:
+        abort(400)
     cash_game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).scalars().first()
     
     sessions = db.session.execute(
@@ -467,8 +467,8 @@ def dash_chart_data():
 def add_game():
     if request.method == 'POST':
         data = request.form
-        game_name = data['name']
-        currency = data['currency']
+        game_name = escape(data.get('name', '').strip())
+        currency = escape(data.get('currency', '').strip())
         my_games = db.session.query(CashGame).where(CashGame.user_id==current_user.id).order_by(CashGame.id).all()
         index = get_unique_color(COLOR_LIST, my_games)
         new_poker_game = CashGame(
@@ -495,15 +495,16 @@ def add_game():
 # EDIT A POKER GAME
 @app.route('/edit-game', methods=['POST', 'GET'])
 def edit_game():
-    game_id = request.args.get('game_id')
+    game_id = request.args.get('game_id', type=int)
+    if game_id is None or game_id <= 0:
+        abort(400)
     game = db.session.execute(db.select(CashGame).where(CashGame.id == game_id)).scalar()
     currency_list = ['$', '£', '€', '₪', '¥']
 
     if request.method == 'POST':
-        print(game)
         data = request.form
-        game.cash_name = data['name']
-        game.currency = data['currency']
+        game.cash_name = escape(data.get('name', '').strip())
+        game.currency = escape(data.get('currency', '').strip())
         try:
             db.session.commit()
         except IntegrityError:
@@ -522,7 +523,9 @@ def edit_game():
 @app.route('/delete-game', methods=['POST', 'GET'])
 @game_user_only
 def delete_game():
-    game_id = request.args.get('game_id')
+    game_id = request.args.get('game_id', type=int)
+    if game_id is None or game_id <= 0:
+        abort(400)
     game_to_delete = db.get_or_404(CashGame, game_id)
     if current_user.id == game_to_delete.user_id:
         db.session.delete(game_to_delete)
@@ -536,7 +539,9 @@ def delete_game():
 # DELETE A POKER SESSION
 @app.route('/delete-session', methods=['POST', 'GET'])
 def delete_session():
-    session_id = request.args.get('session_id')
+    session_id = request.args.get('session_id', type=int)
+    if session_id is None or session_id <= 0:
+        abort(400)
     session_to_delete = db.get_or_404(GameSession, session_id)
     game_id = session_to_delete.cash_game_id
     if current_user.id == session_to_delete.cash_game.user_id:
@@ -560,7 +565,9 @@ def delete_session():
 @current_user_only
 def edit_session():
     # get the speicific session and related game
-    session_id = request.args.get('session')
+    session_id = request.args.get('session', type=int)
+    if session_id is None or session_id <= 0:
+        abort(400)
     session_to_edit = db.session.execute(db.select(GameSession).where(GameSession.id == session_id)).scalar()
     cash_game = session_to_edit.cash_game
     game_id = cash_game.id
@@ -582,14 +589,25 @@ def edit_session():
         buy_ins = 0
         cash_outs = 0
         for i in range(num_players):
-            buy_ins += int(data[f'buyin_{i}'])
-            cash_outs += int(data[f'cashout_{i}']) 
+            try:
+                # Validate and sanitize buyin and cashout inputs
+                buyin = int(escape(data.get(f'buyin_{i}', '0')).strip())
+                cashout = int(escape(data.get(f'cashout_{i}', '0')).strip())
+                buy_ins += buyin
+                cash_outs += cashout
+            except ValueError:
+                flash('Invalid numeric input for buy-in or cash-out.')
+                return redirect(url_for('edit_session', session=session_id))
 
         if buy_ins == cash_outs:
 
             player_names = set()
             for i in range(num_players):
-                player_name = data[f"player_{i}"]
+                player_name = escape(data.get(f"player_{i}", '')).strip().title()
+
+                if not player_name:
+                    flash('Player name cannot be empty.')
+                    return redirect(url_for('edit_session', session=session_id))
             
                 if player_name in player_names:
                     flash('Cannot have two players with the same name.')
@@ -597,8 +615,10 @@ def edit_session():
                 
                 player_names.add(player_name)
 
-            if data['selected_game'] != cash_game.cash_name:
-                new_cash_game = db.session.execute(db.select(CashGame).where(CashGame.cash_name == data['selected_game'],
+            selected_game_name = escape(data.get('selected_game', '')).strip()
+
+            if selected_game_name != cash_game.cash_name:
+                new_cash_game = db.session.execute(db.select(CashGame).where(CashGame.cash_name == selected_game_name,
                 CashGame.user_id == current_user.id)).scalar()
                 session_to_edit.cash_game_id = new_cash_game.id
                 db.session.commit()
@@ -607,8 +627,7 @@ def edit_session():
             # add player names to db
             player_list = cash_game.player_list.copy()
             changed = False
-            for i in range(num_players):
-                player_name = data[f"player_{i}"].title()
+            for player_name in player_names:
                 if player_name not in player_list:
                     player_list.append(player_name)
                     changed = True
@@ -621,9 +640,9 @@ def edit_session():
             updated_game_data = []
             for i in range(num_players):
                 player = {
-                    'name': data[f'player_{i}'].title(),
-                    'buyin': float(data[f'buyin_{i}']),
-                    'cashout': float(data[f'cashout_{i}'])
+                    'name': escape(data.get(f'player_{i}', '')).strip().title(),
+                    'buyin': float(escape(data.get(f'buyin_{i}', '0')).strip()),
+                    'cashout': float(escape(data.get(f'cashout_{i}', '0')).strip())
                 }
                 updated_game_data.append(player)
 
@@ -652,9 +671,10 @@ app.config['TWILIO_AUTH_TOKEN'] = os.getenv("TWILIO_AUTH_TOKEN")
 def contact_form():
     if request.method == 'POST':
         form_data = request.form
-        email_entered = form_data['email']
-        name_entered = form_data['name']
-        message = form_data['message']
+        email_entered = escape(form_data.get('email', '').strip())
+        name_entered = escape(form_data.get('name', '').strip())
+        message = escape(form_data.get('message', '').strip())
+
         try:
             client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
             message = client.messages.create(
@@ -674,7 +694,7 @@ def contact_form():
 def contact_footer():
     if request.method == 'POST':
         form_data = request.form
-        message = form_data['message']
+        message = escape(form_data.get('message', '').strip())
         try:
             client = Client(app.config['TWILIO_ACC_SID'], app.config['TWILIO_AUTH_TOKEN'])
             message = client.messages.create(
@@ -699,10 +719,11 @@ def player_count():
 
     if request.method == 'POST':
         data = request.form
-        number_of_players = data["number"]
+        number_of_players = escape(data.get('number', '').strip())
+        selected_game = escape(data.get('selected_game', '').strip())
         if int(number_of_players) > 0:
             session['num_players'] = int(number_of_players)
-            session['session_game'] = data['selected_game']
+            session['session_game'] = selected_game
             return redirect(url_for('paid_details', players=number_of_players))
         
     return render_template("paid_count.html", cash_game=cash_list)
@@ -722,18 +743,24 @@ def paid_details():
         buy_ins = 0
         cash_outs = 0
         for i in range(num_players):
-            buy_ins += int(data[f'buyin_{i}'])
-            cash_outs += int(data[f'cashout_{i}']) 
+            try:
+                # Validate and sanitize buyin and cashout inputs
+                buyin = int(escape(data.get(f'buyin_{i}', '0')).strip())
+                cashout = int(escape(data.get(f'cashout_{i}', '0')).strip())
+                buy_ins += buyin
+                cash_outs += cashout
+            except ValueError:
+                flash('Invalid numeric input for buy-in or cash-out.')
+                return redirect(url_for('paid_details', players=num_players))
 
         if buy_ins == cash_outs:
 
             player_names = set()
             for i in range(num_players):
-                player_name = data[f"player_{i}"]
+                player_name = escape(data.get(f"player_{i}", '')).strip().title()
             
                 if player_name in player_names:
                     flash('Cannot have two players with the same name.')
-                    session['form_data'] = data.to_dict()
                     return redirect(url_for('paid_details', players=num_players))
                 
                 player_names.add(player_name)
@@ -743,8 +770,7 @@ def paid_details():
             # add player names to db
             player_list = cash_game.player_list.copy()
             changed = False
-            for i in range(num_players):
-                player_name = data[f"player_{i}"].title()
+            for player_name in player_names:
                 if player_name not in player_list:
                     player_list.append(player_name)
                     changed = True
@@ -753,14 +779,31 @@ def paid_details():
                 cash_game.player_list = player_list
                 db.session.commit()
 
-            session['form_data'] = data.to_dict()
+            # Assume 'data' is the form data
+            form_data = data.to_dict()
+
+            # Sanitize and clean the data
+            sanitized_data = {}
+            for key, value in form_data.items():
+                if key.startswith('player_'):
+                    sanitized_data[key] = escape(value.strip())  # Sanitize text input
+                elif key.startswith('buyin_') or key.startswith('cashout_'):
+                    try:
+                        sanitized_data[key] = float(value.strip())  # Convert to float
+                    except ValueError:
+                        sanitized_data[key] = 0.0  # Default to 0.0 if conversion fails
+                else:
+                    sanitized_data[key] = escape(value.strip())  # Default sanitation for other fields
+
+            # Store sanitized data in session
+            session['form_data'] = sanitized_data
             session.pop('extra_data', None)
+            session.pop('saved', None)
 
             return redirect(url_for('paid_results', players=num_players))
         
         else:
             flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
-            session['form_data'] = data.to_dict()
             return redirect(url_for('paid_details', players=num_players))
         
     form_data = session.get('form_data', {})
@@ -777,12 +820,24 @@ def paid_results():
     if request.method == 'POST':        
         # Get new form data
         new_data = request.form.to_dict()
+        sanitized_data = {}
+        for key, value in new_data.items():
+            if key in ['payer', 'payee']:
+                sanitized_data[key] = escape(value.strip()).title()  # Sanitize and capitalize player names
+            elif key == 'amount':
+                try:
+                    sanitized_data[key] = float(value.strip())  # Convert amount to float
+                except ValueError:
+                    sanitized_data[key] = 0.0  # Default to 0.0 if conversion fails
+            else:
+                sanitized_data[key] = escape(value.strip())
+
         form_data = session.get('form_data', {})
         num_players = session.get('num_players')
 
         # Update session with new data
         previous_data = session.get('extra_data', [])
-        previous_data.append(new_data)
+        previous_data.append(sanitized_data)
         session['extra_data'] = previous_data
         
         return redirect(url_for("paid_results"))
@@ -815,6 +870,27 @@ def paid_results():
 
     game_name = session.get('session_game')
     cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
+
+    # save data to db
+
+    if not session.get('saved', False):
+        game_data = []
+        for i in range(num_players):
+            player = {
+                'name': form_data[f'player_{i}'].title(),
+                'buyin': float(form_data[f'buyin_{i}']),
+                'cashout': float(form_data[f'cashout_{i}'])
+            }
+            game_data.append(player)
+        game_name = session.get('session_game')
+        cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
+
+
+        new_game = GameSession(game_data=game_data, cash_game=cash_game)
+        db.session.add(new_game)
+        db.session.commit()
+
+        session['saved'] = True
 
     return render_template("paid_results.html", form_data=form_data, 
                            players=num_players, settlements=settlements,
@@ -902,31 +978,31 @@ def paid_results():
     # return render_template("live_details.html", players=number_of_players, cash_game=cash_game)
 
 
-# SAVE GAME DATA
-@app.route('/save-data', methods=['POST', 'GET'])
-@login_required
-def save_data():
-    form_data = session.get('form_data', {})
-    num_players = session.get('num_players')
-    game_data = []
-    for i in range(num_players):
-        player = {
-            'name': form_data[f'player_{i}'].title(),
-            'buyin': float(form_data[f'buyin_{i}']),
-            'cashout': float(form_data[f'cashout_{i}'])
-        }
-        game_data.append(player)
-    game_name = session.get('session_game')
-    cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
+# # SAVE GAME DATA
+# @app.route('/save-data', methods=['POST', 'GET'])
+# @login_required
+# def save_data():
+#     form_data = session.get('form_data', {})
+#     num_players = session.get('num_players')
+#     game_data = []
+#     for i in range(num_players):
+#         player = {
+#             'name': form_data[f'player_{i}'].title(),
+#             'buyin': float(form_data[f'buyin_{i}']),
+#             'cashout': float(form_data[f'cashout_{i}'])
+#         }
+#         game_data.append(player)
+#     game_name = session.get('session_game')
+#     cash_game = db.session.query(CashGame).filter_by(cash_name=game_name, user_id=current_user.id).first()
 
 
-    new_game = GameSession(game_data=game_data, cash_game=cash_game)
-    db.session.add(new_game)
-    db.session.commit()
+#     new_game = GameSession(game_data=game_data, cash_game=cash_game)
+#     db.session.add(new_game)
+#     db.session.commit()
 
-    # give feedback and write something here to disable the button being pressed multiple times until the next time this page is visited
+#     # give feedback and write something here to disable the button being pressed multiple times until the next time this page is visited
 
-    return redirect(url_for('paid_results'))
+#     return redirect(url_for('paid_results'))
 
 
 
@@ -935,7 +1011,7 @@ def save_data():
 def free_player_count():
     if request.method == 'POST':
         data = request.form
-        number_of_players = data["number"]
+        number_of_players = escape(data.get('number', '').strip())
         if number_of_players:
             session['num_players'] = int(number_of_players)
             return redirect(url_for('free_details', players=number_of_players))
@@ -951,16 +1027,42 @@ def free_details():
         buy_ins = 0
         cash_outs = 0
         for i in range(num_players):
-            buy_ins += int(data[f'buyin_{i}'])
-            cash_outs += int(data[f'cashout_{i}'])        
+            try:
+                # Validate and sanitize buyin and cashout inputs
+                buyin = int(escape(data.get(f'buyin_{i}', '0')).strip())
+                cashout = int(escape(data.get(f'cashout_{i}', '0')).strip())
+                buy_ins += buyin
+                cash_outs += cashout
+            except ValueError:
+                flash('Invalid numeric input for buy-in or cash-out.')
+                return redirect(url_for('free_results', players=num_players))
+
         if buy_ins == cash_outs:
-            session['form_data'] = data.to_dict()
+
+            form_data = data.to_dict()
+
+            # Sanitize and clean the data
+            sanitized_data = {}
+            for key, value in form_data.items():
+                if key.startswith('player_'):
+                    sanitized_data[key] = escape(value.strip())  # Sanitize text input
+                elif key.startswith('buyin_') or key.startswith('cashout_'):
+                    try:
+                        sanitized_data[key] = float(value.strip())  # Convert to float
+                    except ValueError:
+                        sanitized_data[key] = 0.0  # Default to 0.0 if conversion fails
+                else:
+                    sanitized_data[key] = escape(value.strip())  # Default sanitation for other fields
+
+            # Store sanitized data in session
+            session['form_data'] = sanitized_data
             session.pop('extra_data', None)
             return redirect(url_for('free_results', players=num_players))
+        
         else:
             flash(f'Calculation error  |  Buy-ins: {buy_ins}  |  Cash-outs: {cash_outs}  |  Difference: {abs(buy_ins-cash_outs)}')
-            session['form_data'] = data.to_dict()
             return redirect(url_for('free_details', players=num_players))
+        
     form_data = session.get('form_data', {})
     number_of_players = session.get('num_players')
     return render_template("player_details.html", players=number_of_players, form_data=form_data)
@@ -988,12 +1090,24 @@ def free_results():
     if request.method == 'POST':        
         # Get new form data
         new_data = request.form.to_dict()
+        sanitized_data = {}
+        for key, value in new_data.items():
+            if key in ['payer', 'payee']:
+                sanitized_data[key] = escape(value.strip()).title()  # Sanitize and capitalize player names
+            elif key == 'amount':
+                try:
+                    sanitized_data[key] = float(value.strip())  # Convert amount to float
+                except ValueError:
+                    sanitized_data[key] = 0.0  # Default to 0.0 if conversion fails
+            else:
+                sanitized_data[key] = escape(value.strip())  # Default sanitation for other fields
+
         form_data = session.get('form_data', {})
         num_players = session.get('num_players')
 
         # Update session with new data
         previous_data = session.get('extra_data', [])
-        previous_data.append(new_data)
+        previous_data.append(sanitized_data)
         session['extra_data'] = previous_data
         
         return redirect(url_for("free_results"))

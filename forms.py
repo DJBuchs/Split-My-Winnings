@@ -1,11 +1,11 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, DecimalField, FieldList, FormField
-from wtforms.validators import DataRequired, URL, Email, NumberRange
+from wtforms.validators import DataRequired, URL, Email, NumberRange, Length
 
 class RegisterForm(FlaskForm):
     name = StringField(
         label='Name', 
-        validators=[DataRequired()],
+        validators=[DataRequired(), Length(min=3, max=15)],
         render_kw={"class": "form-control"}
         )
     email = StringField(
@@ -15,7 +15,7 @@ class RegisterForm(FlaskForm):
         )
     password = PasswordField(
         label='Password', 
-        validators=[DataRequired()],
+        validators=[DataRequired(), Length(min=3, max=25)],
         render_kw={"class": "form-control", "autocomplete":"new-password"}
         )
     submit = SubmitField(
@@ -31,7 +31,7 @@ class LoginForm(FlaskForm):
         )
     password = PasswordField(
         label='Password', 
-        validators=[DataRequired()],
+        validators=[DataRequired(), Length(min=3, max=25)],
         render_kw={"class": "form-control"}
         )
     submit = SubmitField(
