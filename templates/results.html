@@ -18,7 +18,7 @@
                     <tbody>
                         {% for i in range(players) %}
                         <tr>
-                            <td class="bg-light">{{ form_data.get('player_' ~ i|string, '').capitalize() }}</td>
+                            <td class="bg-light">{{ form_data.get('player_' ~ i|string, '').title() }}</td>
                             <td class="text-end">{{ form_data.get('buyin_' ~ i|string, 0)|float|int }}</td>
                             <td class="text-end">{{ form_data.get('cashout_' ~ i|string, 0)|float|int }}</td>
                         </tr>
@@ -35,11 +35,11 @@
                             {% for i in range(players) %}
                             <div class="m-2 text-center">
                                 {% if winnings[i] > 0 %}
-                                    <strong style="color: #009C4C;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Won {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
+                                    <strong style="color: #009C4C;">{{ form_data.get('player_' ~ i|string, '').title() }}:</strong> Won {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
                                 {% elif winnings[i] < 0 %}
-                                    <strong style="color: #C8102E;">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Lost {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
+                                    <strong style="color: #C8102E;">{{ form_data.get('player_' ~ i|string, '').title() }}:</strong> Lost {{ "{:.0f}".format(winnings[i]|abs) }} chips<br>
                                 {% else %}
-                                    <strong class="text-secondary">{{ form_data.get('player_' ~ i|string, '').capitalize() }}:</strong> Broke even<br>
+                                    <strong class="text-secondary">{{ form_data.get('player_' ~ i|string, '').title() }}:</strong> Broke even<br>
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -111,7 +111,7 @@
                     <select class="form-select placeholder-style" name="payer" aria-label="Default select" required>
                         <option selected disabled value="">Payer</option>
                         {% for i in range(players) %}
-                        <option>{{ form_data.get('player_' ~ i|string, '').capitalize() }}</option>
+                        <option>{{ form_data.get('player_' ~ i|string, '').title() }}</option>
                         {% endfor %}
                       </select>
                 </div>
@@ -119,7 +119,7 @@
                     <select class="form-select placeholder-style" name="payee" aria-label="Default select" required>
                         <option selected disabled value="">Payee</option>
                         {% for i in range(players) %}
-                        <option>{{ form_data.get('player_' ~ i|string, '').capitalize() }}</option>
+                        <option>{{ form_data.get('player_' ~ i|string, '').title() }}</option>
                         {% endfor %}
                       </select>
                 </div>
