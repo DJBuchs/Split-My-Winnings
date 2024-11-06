@@ -25,9 +25,9 @@
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
               <li><a href="{{url_for('home')}}" class="nav-link px-2 text-secondary">Home</a></li>
               {% if current_user.is_authenticated %}
-                <li><a href="{{url_for('player_count')}}" class="nav-link px-2 text-white">Settle Game</a></li>
+                <li><a href="{{url_for('player_count')}}" class="nav-link px-2 text-success" style="font-weight: bold;">Settle Game</a></li>
               {% else %}
-                <li><a href="{{url_for('free_player_count')}}" class="nav-link px-2 text-white">Split-Free</a></li>
+                <li><a href="{{url_for('free_player_count')}}" class="nav-link px-2 text-success" style="font-weight: bold;">Split-Free</a></li>
               {% endif %}
                 <li><a href="{{url_for('contact_form')}}" class="nav-link px-2 text-white">Contact</a></li>
                 <li><a href="#" class="nav-link px-2 text-white">Support Me</a></li>
