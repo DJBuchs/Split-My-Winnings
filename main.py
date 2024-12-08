@@ -88,7 +88,13 @@ SHEETY_ENDPOINT_CONTACT = os.getenv('SHEETY_ENDPOINT_CONTACT')
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.get_or_404(User, user_id)
+    return db.session.get(User, user_id)
+
+@app.before_request
+def auto_logout_missing_user():
+    if current_user.is_authenticated and db.session.get(User, current_user.id) is None:
+        logout_user()  # Log out the user if they no longer exist
+        return redirect(url_for('login'))  # Redirect to the login page
 
 
 class Base(DeclarativeBase):
